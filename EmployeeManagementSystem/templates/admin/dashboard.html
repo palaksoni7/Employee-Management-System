@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - Employee Management System{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="h3 fw-bold mb-1">Admin Dashboard</h2>
+        <p class="text-muted small mb-0">Overview of employees, operations, and HR metrics.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('admin.add_employee') }}" class="btn btn-navy btn-sm">
+            <i class="bi bi-person-plus me-1"></i> Add Employee
+        </a>
+        <a href="{{ url_for('admin.departments') }}" class="btn btn-blue btn-sm">
+            <i class="bi bi-building-add me-1"></i> Manage Departments
+        </a>
+    </div>
+</div>
+
+<!-- 5 Stat Cards Row -->
+<div class="row g-3 mb-4">
+    <!-- Total Employees -->
+    <div class="col-12 col-sm-6 col-xl">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">Total Employees</div>
+                <div class="stat-value">{{ metrics.total_employees }}</div>
+            </div>
+            <div class="stat-icon blue">
+                <i class="bi bi-people-fill"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Employees -->
+    <div class="col-12 col-sm-6 col-xl">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">Active Employees</div>
+                <div class="stat-value text-success">{{ metrics.active_employees }}</div>
+            </div>
+            <div class="stat-icon emerald">
+                <i class="bi bi-person-check-fill"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Departments -->
+    <div class="col-12 col-sm-6 col-xl">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">Departments</div>
+                <div class="stat-value">{{ metrics.total_departments }}</div>
+            </div>
+            <div class="stat-icon navy">
+                <i class="bi bi-building"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Present Today -->
+    <div class="col-12 col-sm-6 col-xl">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">Present Today</div>
+                <div class="stat-value text-primary">{{ metrics.today_present }}</div>
+            </div>
+            <div class="stat-icon blue">
+                <i class="bi bi-calendar-check"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- On Leave Today -->
+    <div class="col-12 col-sm-6 col-xl">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">On Leave Today</div>
+                <div class="stat-value text-warning">{{ metrics.on_leave_today }}</div>
+            </div>
+            <div class="stat-icon amber">
+                <i class="bi bi-calendar-minus"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Middle Section: Chart & Department Breakdown -->
+<div class="row g-4 mb-4">
+    <!-- Department Chart -->
+    <div class="col-lg-7">
+        <div class="card-modern h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Department-wise Employee Distribution</h5>
+                <span class="badge bg-light text-muted border">Live Database Metrics</span>
+            </div>
+            <div style="position: relative; height: 280px; width: 100%;">
+                <canvas id="deptDistributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Overview Card -->
+    <div class="col-lg-5">
+        <div class="card-modern h-100">
+            <h5 class="fw-bold mb-3">Department Headcount Summary</h5>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="border-0">Department</th>
+                            <th class="border-0 text-end">Employees</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if chart_labels %}
+                            {% for i in range(chart_labels|length) %}
+                            <tr>
+                                <td class="fw-medium text-dark">
+                                    <i class="bi bi-circle-fill me-2 text-primary" style="font-size: 8px;"></i>
+                                    {{ chart_labels[i] }}
+                                </td>
+                                <td class="text-end">
+                                    <span class="badge bg-secondary-subtle text-secondary px-2 py-1">
+                                        {{ chart_counts[i] }} staff
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="2" class="text-center text-muted py-3">No departments created yet.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-3 pt-3 border-top text-end">
+                <a href="{{ url_for('admin.departments') }}" class="btn btn-sm btn-outline-primary">
+                    View All Departments <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities Section -->
+<div class="row g-4">
+    <!-- Latest Enrolled Employees -->
+    <div class="col-lg-6">
+        <div class="card-modern">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Recently Enrolled Employees</h5>
+                <a href="{{ url_for('admin.employees') }}" class="small text-decoration-none">View All</a>
+            </div>
+            
+            {% if recent_employees %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="small text-muted">
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Joined</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for emp in recent_employees %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold text-dark">{{ emp.first_name }} {{ emp.last_name }}</div>
+                                <small class="text-muted font-monospace">{{ emp.employee_code }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">{{ emp.department_name or 'Unassigned' }}</span>
+                            </td>
+                            <td class="small text-muted">{{ emp.date_of_joining }}</td>
+                            <td class="text-end">
+                                <a href="{{ url_for('admin.view_employee', emp_id=emp.id) }}" class="btn btn-sm btn-light border" title="View Profile">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4">No employees registered yet.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Leave Requests -->
+    <div class="col-lg-6">
+        <div class="card-modern">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Recent Leave Applications</h5>
+                <span class="badge bg-light text-muted border">HR Review</span>
+            </div>
+
+            {% if recent_leaves %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="small text-muted">
+                            <th>Employee</th>
+                            <th>Type</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for leave in recent_leaves %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold text-dark">{{ leave.first_name }} {{ leave.last_name }}</div>
+                                <small class="text-muted">{{ leave.employee_code }}</small>
+                            </td>
+                            <td class="small">{{ leave.leave_type }}</td>
+                            <td class="small text-muted">{{ leave.start_date }} to {{ leave.end_date }}</td>
+                            <td>
+                                {% if leave.status == 'Approved' %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">Approved</span>
+                                {% elif leave.status == 'Rejected' %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Rejected</span>
+                                {% else %}
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4">No leave requests submitted yet.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const labels = {{ chart_labels | tojson }};
+    const counts = {{ chart_counts | tojson }};
+
+    const ctx = document.getElementById('deptDistributionChart');
+    if (ctx && labels.length > 0) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Number of Employees',
+                    data: counts,
+                    backgroundColor: [
+                        '#0284c7', // light blue
+                        '#0f172a', // navy
+                        '#38bdf8', // sky blue
+                        '#64748b', // slate
+                        '#0d9488', // teal
+                        '#6366f1'  // indigo
+                    ],
+                    borderRadius: 6,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` Employees: ${context.raw}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            precision: 0
+                        },
+                        grid: {
+                            color: '#f1f5f9'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

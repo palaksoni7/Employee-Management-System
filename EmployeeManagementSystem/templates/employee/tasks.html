@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}My Assigned Tasks - Employee Portal - EMS{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="h3 fw-bold mb-1">My Assigned Tasks</h2>
+        <p class="text-muted small mb-0">Track your workplace tasks, monitor deadlines, and update your task progress.</p>
+    </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">Total Assigned</div>
+                <div class="stat-value">{{ stats.total }}</div>
+            </div>
+            <div class="stat-icon navy">
+                <i class="bi bi-list-task"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">Pending</div>
+                <div class="stat-value text-warning">{{ stats.pending }}</div>
+            </div>
+            <div class="stat-icon amber">
+                <i class="bi bi-clock-history"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">In Progress</div>
+                <div class="stat-value text-primary">{{ stats.in_progress }}</div>
+            </div>
+            <div class="stat-icon blue">
+                <i class="bi bi-arrow-repeat"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">Completed</div>
+                <div class="stat-value text-success">{{ stats.completed }}</div>
+            </div>
+            <div class="stat-icon emerald">
+                <i class="bi bi-check2-circle"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Filter Tabs -->
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="{{ url_for('employee.tasks') }}" class="btn btn-sm {% if not selected_status %}btn-navy{% else %}btn-outline-secondary{% endif %}">
+        All Tasks ({{ stats.total }})
+    </a>
+    <a href="{{ url_for('employee.tasks', status='Pending') }}" class="btn btn-sm {% if selected_status == 'Pending' %}btn-warning text-dark{% else %}btn-outline-warning text-dark{% endif %}">
+        <i class="bi bi-hourglass-split me-1"></i> Pending ({{ stats.pending }})
+    </a>
+    <a href="{{ url_for('employee.tasks', status='In Progress') }}" class="btn btn-sm {% if selected_status == 'In Progress' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+        <i class="bi bi-arrow-repeat me-1"></i> In Progress ({{ stats.in_progress }})
+    </a>
+    <a href="{{ url_for('employee.tasks', status='Completed') }}" class="btn btn-sm {% if selected_status == 'Completed' %}btn-success{% else %}btn-outline-success{% endif %}">
+        <i class="bi bi-check-circle me-1"></i> Completed ({{ stats.completed }})
+    </a>
+</div>
+
+<!-- Task Cards Grid -->
+{% if tasks %}
+<div class="row g-3">
+    {% for task in tasks %}
+    <div class="col-md-6 col-xl-4">
+        <div class="card-modern h-100 d-flex flex-column justify-content-between {% if task.status == 'Completed' %}border-success-subtle bg-light-subtle{% endif %}">
+            <div>
+                <!-- Top Row: Priority & Status Badges -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <!-- Priority Badge -->
+                    {% if task.priority == 'Urgent' %}
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                        <i class="bi bi-exclamation-octagon-fill me-1"></i> Urgent Priority
+                    </span>
+                    {% elif task.priority == 'High' %}
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">
+                        <i class="bi bi-arrow-up-circle-fill me-1"></i> High Priority
+                    </span>
+                    {% elif task.priority == 'Medium' %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                        <i class="bi bi-dash-circle me-1"></i> Medium Priority
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary border px-2 py-1">
+                        <i class="bi bi-arrow-down-circle me-1"></i> Low Priority
+                    </span>
+                    {% endif %}
+
+                    <!-- Status Badge -->
+                    {% if task.status == 'Completed' %}
+                    <span class="badge bg-success px-2 py-1">
+                        <i class="bi bi-check-circle-fill me-1"></i> Completed
+                    </span>
+                    {% elif task.status == 'In Progress' %}
+                    <span class="badge bg-primary px-2 py-1">
+                        <i class="bi bi-gear-fill me-1"></i> In Progress
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary px-2 py-1">
+                        <i class="bi bi-hourglass me-1"></i> Pending
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Title & Description -->
+                <h5 class="fw-bold mb-2 {% if task.status == 'Completed' %}text-decoration-line-through text-muted{% endif %}">
+                    {{ task.title }}
+                </h5>
+                <p class="text-muted small mb-3">
+                    {{ task.description or 'No additional instructions provided.' }}
+                </p>
+
+                <!-- Deadline Notification -->
+                <div class="mb-3 small">
+                    <span class="text-muted"><i class="bi bi-calendar-event me-1"></i> Deadline:</span>
+                    {% if task.due_date %}
+                        <strong>{{ task.due_date }}</strong>
+                        {% if task.status != 'Completed' %}
+                            {% if task.due_date < today %}
+                            <div class="text-danger fw-semibold mt-1">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i> Overdue! Please submit updates.
+                            </div>
+                            {% elif task.due_date == today %}
+                            <div class="text-warning fw-semibold mt-1">
+                                <i class="bi bi-clock-fill me-1"></i> Due Today!
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                    {% else %}
+                        <span class="text-muted">Flexible / No Deadline</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Footer & Status Action Controls -->
+            <div class="border-top pt-3 mt-2">
+                <div class="d-flex justify-content-between align-items-center mb-2 text-muted" style="font-size: 11px;">
+                    <span>Assigned by <strong>{{ task.assigned_by_name or 'Administration' }}</strong></span>
+                    <span>{{ task.created_at.strftime('%b %d, %Y') if task.created_at else '' }}</span>
+                </div>
+
+                <!-- Status Update Form -->
+                <form method="POST" action="{{ url_for('employee.update_task_status', task_id=task.id) }}" class="d-flex gap-2">
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="Pending" {% if task.status == 'Pending' %}selected{% endif %}>Pending</option>
+                        <option value="In Progress" {% if task.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                        <option value="Completed" {% if task.status == 'Completed' %}selected{% endif %}>Completed</option>
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-navy text-nowrap">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Update
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card-modern text-center py-5">
+    <i class="bi bi-check2-circle fs-1 d-block mb-3 text-success"></i>
+    <h4 class="fw-bold mb-1">No Tasks Found</h4>
+    <p class="text-muted small mb-0">
+        {% if selected_status %}
+        You do not have any tasks in the <strong>{{ selected_status }}</strong> state.
+        {% else %}
+        You currently have no tasks assigned to you. Great job staying on top of everything!
+        {% endif %}
+    </p>
+</div>
+{% endif %}
+{% endblock %}

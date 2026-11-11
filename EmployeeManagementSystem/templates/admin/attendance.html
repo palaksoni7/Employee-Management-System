@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+
+{% block title %}Daily Attendance - EMS Admin{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="h3 fw-bold mb-1">Attendance Management</h2>
+        <p class="text-muted small mb-0">Record, review, and adjust daily attendance and punch times for employees.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('admin.monthly_attendance') }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-calendar3 me-1"></i> Monthly Summary View
+        </a>
+        <button type="button" class="btn btn-navy btn-sm" data-bs-toggle="modal" data-bs-target="#markAttendanceModal">
+            <i class="bi bi-pencil-square me-1"></i> Mark Attendance
+        </button>
+    </div>
+</div>
+
+<!-- Date & Filters Card -->
+<div class="card-modern mb-4 p-3">
+    <form method="GET" action="{{ url_for('admin.attendance') }}" class="row g-2 align-items-center">
+        <!-- Date Picker -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
+                <input type="date" class="form-control" name="date" value="{{ selected_date }}" onchange="this.form.submit()">
+            </div>
+        </div>
+
+        <!-- Department Filter -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <select class="form-select form-select-sm" name="department" onchange="this.form.submit()">
+                <option value="">All Departments</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}" {% if selected_dept|string == dept.id|string %}selected{% endif %}>
+                    {{ dept.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Search Input -->
+        <div class="col-12 col-sm-8 col-md-4">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" name="search" value="{{ search }}" 
+                       placeholder="Search employee name or code...">
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="col-12 col-sm-4 col-md-2 d-flex gap-1">
+            <button type="submit" class="btn btn-sm btn-navy w-100">Filter</button>
+            {% if search or selected_dept or selected_date != today_str %}
+            <a href="{{ url_for('admin.attendance') }}" class="btn btn-sm btn-outline-secondary" title="Reset">
+                <i class="bi bi-arrow-clockwise"></i>
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Daily Summary Metrics -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Total Staff</div>
+                <div class="stat-value fs-4">{{ stats.total }}</div>
+            </div>
+            <div class="stat-icon navy" style="width: 40px; height: 40px; font-size: 18px;">
+                <i class="bi bi-people"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Present</div>
+                <div class="stat-value fs-4 text-success">{{ stats.present }}</div>
+            </div>
+            <div class="stat-icon emerald" style="width: 40px; height: 40px; font-size: 18px;">
+                <i class="bi bi-check-circle"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Half Day</div>
+                <div class="stat-value fs-4 text-warning">{{ stats.half_day }}</div>
+            </div>
+            <div class="stat-icon amber" style="width: 40px; height: 40px; font-size: 18px;">
+                <i class="bi bi-clock-history"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">On Leave</div>
+                <div class="stat-value fs-4 text-info">{{ stats.leave }}</div>
+            </div>
+            <div class="stat-icon blue" style="width: 40px; height: 40px; font-size: 18px;">
+                <i class="bi bi-calendar-minus"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Absent</div>
+                <div class="stat-value fs-4 text-danger">{{ stats.absent }}</div>
+            </div>
+            <div class="stat-icon" style="width: 40px; height: 40px; font-size: 18px; background: #fee2e2; color: #dc2626;">
+                <i class="bi bi-x-circle"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Not Marked</div>
+                <div class="stat-value fs-4 text-secondary">{{ stats.not_marked }}</div>
+            </div>
+            <div class="stat-icon" style="width: 40px; height: 40px; font-size: 18px; background: #f1f5f9; color: #64748b;">
+                <i class="bi bi-dash-circle"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Attendance Table -->
+<div class="card-modern p-0 overflow-hidden">
+    <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+        <span class="fw-semibold text-dark">
+            <i class="bi bi-calendar-check text-primary me-2"></i> Attendance Log for {{ selected_date }}
+        </span>
+        <span class="badge bg-white text-muted border">Records: {{ attendance_records|length }}</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Employee</th>
+                    <th>Department</th>
+                    <th>Designation</th>
+                    <th class="text-center">Status</th>
+                    <th>Check-In</th>
+                    <th>Check-Out</th>
+                    <th>Notes</th>
+                    <th class="text-end pe-3">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if attendance_records %}
+                    {% for row in attendance_records %}
+                    <tr>
+                        <td class="ps-3">
+                            <div class="fw-bold text-dark">{{ row.first_name }} {{ row.last_name }}</div>
+                            <span class="badge bg-light text-primary border font-monospace" style="font-size: 10px;">
+                                {{ row.employee_code }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ row.department_name or 'Unassigned' }}</span>
+                        </td>
+                        <td class="small text-muted">{{ row.designation or 'Staff' }}</td>
+                        
+                        <!-- Status Badge -->
+                        <td class="text-center">
+                            {% if row.status == 'Present' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">Present</span>
+                            {% elif row.status == 'Absent' %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1">Absent</span>
+                            {% elif row.status == 'Half Day' %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-1">Half Day</span>
+                            {% elif row.status in ['Leave', 'On Leave'] %}
+                                <span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-1">Leave</span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary border px-3 py-1">Not Marked</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Clock In -->
+                        <td class="small font-monospace">{{ row.clock_in if row.clock_in else '--:--' }}</td>
+                        
+                        <!-- Clock Out -->
+                        <td class="small font-monospace">{{ row.clock_out if row.clock_out else '--:--' }}</td>
+                        
+                        <!-- Notes -->
+                        <td class="small text-muted" style="max-width: 200px;">
+                            {{ row.notes if row.notes else '-' }}
+                        </td>
+
+                        <!-- Action: Quick Mark/Edit Modal Trigger -->
+                        <td class="text-end pe-3">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editModal{{ row.employee_id }}" 
+                                    title="Mark or Update Attendance">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+
+                            <!-- Modal for this specific employee -->
+                            <div class="modal fade" id="editModal{{ row.employee_id }}" tabindex="-1" aria-hidden="true" style="text-align: left;">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <form method="POST" action="{{ url_for('admin.mark_attendance') }}">
+                                            <input type="hidden" name="employee_id" value="{{ row.employee_id }}">
+                                            <input type="hidden" name="date" value="{{ selected_date }}">
+
+                                            <div class="modal-header">
+                                                <h5 class="modal-title fw-bold">Update Attendance: {{ row.first_name }} {{ row.last_name }}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+
+                                            <div class="modal-body">
+                                                <div class="p-2 mb-3 bg-light rounded border small">
+                                                    <strong>Employee:</strong> {{ row.first_name }} {{ row.last_name }} ({{ row.employee_code }}) &bull;
+                                                    <strong>Date:</strong> {{ selected_date }}
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold small">Attendance Status <span class="text-danger">*</span></label>
+                                                    <select class="form-select" name="status" required>
+                                                        <option value="Present" {% if row.status == 'Present' %}selected{% endif %}>Present</option>
+                                                        <option value="Absent" {% if row.status == 'Absent' %}selected{% endif %}>Absent</option>
+                                                        <option value="Half Day" {% if row.status == 'Half Day' %}selected{% endif %}>Half Day</option>
+                                                        <option value="Leave" {% if row.status in ['Leave', 'On Leave'] %}selected{% endif %}>Leave</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="row g-2 mb-3">
+                                                    <div class="col-6">
+                                                        <label class="form-label fw-semibold small">Clock In Time</label>
+                                                        <input type="time" class="form-control font-monospace" name="clock_in" value="{{ row.clock_in }}">
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <label class="form-label fw-semibold small">Clock Out Time</label>
+                                                        <input type="time" class="form-control font-monospace" name="clock_out" value="{{ row.clock_out }}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold small">Admin Notes / Remarks</label>
+                                                    <input type="text" class="form-control" name="notes" value="{{ row.notes or '' }}" placeholder="e.g. Approved early departure, client meeting...">
+                                                </div>
+                                            </div>
+
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-sm btn-navy">Save Attendance</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-5">
+                            No employees found for the selected department or search filter.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Mark Attendance for Any Employee -->
+<div class="modal fade" id="markAttendanceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin.mark_attendance') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Mark Employee Attendance</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Select Employee <span class="text-danger">*</span></label>
+                        <select class="form-select" name="employee_id" required>
+                            <option value="">Choose Employee...</option>
+                            {% for emp in attendance_records %}
+                            <option value="{{ emp.employee_id }}">{{ emp.first_name }} {{ emp.last_name }} ({{ emp.employee_code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" name="date" value="{{ selected_date }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Attendance Status <span class="text-danger">*</span></label>
+                        <select class="form-select" name="status" required>
+                            <option value="Present" selected>Present</option>
+                            <option value="Absent">Absent</option>
+                            <option value="Half Day">Half Day</option>
+                            <option value="Leave">Leave</option>
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small">Clock In</label>
+                            <input type="time" class="form-control font-monospace" name="clock_in" value="09:00">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small">Clock Out</label>
+                            <input type="time" class="form-control font-monospace" name="clock_out" value="17:00">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Notes</label>
+                        <input type="text" class="form-control" name="notes" placeholder="Optional remarks...">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-navy">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

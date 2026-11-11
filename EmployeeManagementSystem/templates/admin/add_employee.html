@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Enroll Employee - EMS Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h3 fw-bold mb-1">Enroll New Employee</h2>
+        <p class="text-muted small mb-0">Create employee profile and automatically generate system login credentials.</p>
+    </div>
+    <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back to Directory
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card-modern">
+            <form method="POST" action="{{ url_for('admin.add_employee') }}" enctype="multipart/form-data">
+                
+                <!-- Section 1: Basic & Identification Details -->
+                <h5 class="fw-bold text-primary mb-3 pb-2 border-bottom">
+                    <i class="bi bi-person-lines-fill me-2"></i> 1. Personal & Contact Information
+                </h5>
+                <div class="row g-3 mb-4">
+                    <!-- Employee ID -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Employee ID <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="employee_code" placeholder="e.g. EMS102" required autofocus>
+                        <small class="text-muted" style="font-size: 11px;">Must be a unique code</small>
+                    </div>
+
+                    <!-- Full Name -->
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold small">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="full_name" placeholder="e.g. Sarah Jenkins" required>
+                    </div>
+
+                    <!-- Email Address -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small">Official Email Address <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" name="email" placeholder="sarah.jenkins@ems.com" required>
+                        <small class="text-muted" style="font-size: 11px;">Used as employee login identifier</small>
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small">Phone Number</label>
+                        <input type="tel" class="form-control" name="phone" placeholder="9876543210">
+                    </div>
+
+                    <!-- Gender -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small">Gender</label>
+                        <select class="form-select" name="gender">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Section 2: Department & Employment Details -->
+                <h5 class="fw-bold text-primary mb-3 pb-2 border-bottom">
+                    <i class="bi bi-briefcase-fill me-2"></i> 2. Department & Job Details
+                </h5>
+                <div class="row g-3 mb-4">
+                    <!-- Department -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Department <span class="text-danger">*</span></label>
+                        <select class="form-select" name="department_id" required>
+                            <option value="">Select Department</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}">{{ dept.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Designation -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Designation <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="designation" placeholder="e.g. Senior Software Engineer" required>
+                    </div>
+
+                    <!-- Basic Monthly Salary -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Basic Monthly Salary (₹) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" class="form-control" name="basic_salary" placeholder="50000.00" required>
+                    </div>
+
+                    <!-- Joining Date -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Date of Joining <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" name="date_of_joining" required>
+                    </div>
+
+                    <!-- Employment Status -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Employment Status</label>
+                        <select class="form-select" name="is_active">
+                            <option value="1" selected>Active (Can Login)</option>
+                            <option value="0">Inactive (Account Locked)</option>
+                        </select>
+                    </div>
+
+                    <!-- Default Portal Password -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Portal Password</label>
+                        <input type="text" class="form-control font-monospace" name="password" placeholder="Emp@123" value="Emp@123">
+                        <small class="text-muted" style="font-size: 11px;">Default is <code>Emp@123</code></small>
+                    </div>
+                </div>
+
+                <!-- Section 3: Address & Photo -->
+                <h5 class="fw-bold text-primary mb-3 pb-2 border-bottom">
+                    <i class="bi bi-geo-alt-fill me-2"></i> 3. Address & Profile Photo
+                </h5>
+                <div class="row g-3 mb-4">
+                    <!-- Address -->
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold small">Residential Address</label>
+                        <textarea class="form-control" name="address" rows="3" placeholder="Enter permanent / residential address..."></textarea>
+                    </div>
+
+                    <!-- Profile Photo (Optional) -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Profile Photo (Optional)</label>
+                        <input type="file" class="form-control" name="profile_photo" accept=".png, .jpg, .jpeg, .webp">
+                        <small class="text-muted d-block mt-1" style="font-size: 11px;">Supported formats: PNG, JPG, JPEG, WEBP.</small>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                    <a href="{{ url_for('admin.employees') }}" class="btn btn-light border px-4">Cancel</a>
+                    <button type="submit" class="btn btn-navy px-4 fw-semibold">
+                        <i class="bi bi-check-circle me-1"></i> Enroll Employee
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

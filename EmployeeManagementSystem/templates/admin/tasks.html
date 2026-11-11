@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+
+{% block title %}Task Management - Admin - EMS{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="h3 fw-bold mb-1">Task Management</h2>
+        <p class="text-muted small mb-0">Create, assign, and track employee workplace tasks and deadlines.</p>
+    </div>
+    <div>
+        <button type="button" class="btn btn-navy" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+            <i class="bi bi-plus-circle me-1"></i> Assign New Task
+        </button>
+    </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">Total Tasks</div>
+                <div class="stat-value">{{ stats.total }}</div>
+            </div>
+            <div class="stat-icon navy">
+                <i class="bi bi-check2-square"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">Pending</div>
+                <div class="stat-value text-warning">{{ stats.pending }}</div>
+            </div>
+            <div class="stat-icon amber">
+                <i class="bi bi-clock-history"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">In Progress</div>
+                <div class="stat-value text-primary">{{ stats.in_progress }}</div>
+            </div>
+            <div class="stat-icon blue">
+                <i class="bi bi-arrow-repeat"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">Completed</div>
+                <div class="stat-value text-success">{{ stats.completed }}</div>
+            </div>
+            <div class="stat-icon emerald">
+                <i class="bi bi-check2-circle"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Card -->
+<div class="card-modern mb-4">
+    <form method="GET" action="{{ url_for('admin.tasks') }}" class="row g-3 align-items-end">
+        <div class="col-md-3 col-sm-6">
+            <label class="form-label small fw-semibold text-muted">Status</label>
+            <select name="status" class="form-select form-select-sm">
+                <option value="">All Statuses</option>
+                <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+                <option value="In Progress" {% if selected_status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                <option value="Completed" {% if selected_status == 'Completed' %}selected{% endif %}>Completed</option>
+            </select>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <label class="form-label small fw-semibold text-muted">Priority</label>
+            <select name="priority" class="form-select form-select-sm">
+                <option value="">All Priorities</option>
+                <option value="Urgent" {% if selected_priority == 'Urgent' %}selected{% endif %}>Urgent</option>
+                <option value="High" {% if selected_priority == 'High' %}selected{% endif %}>High</option>
+                <option value="Medium" {% if selected_priority == 'Medium' %}selected{% endif %}>Medium</option>
+                <option value="Low" {% if selected_priority == 'Low' %}selected{% endif %}>Low</option>
+            </select>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <label class="form-label small fw-semibold text-muted">Department</label>
+            <select name="department" class="form-select form-select-sm">
+                <option value="">All Departments</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}" {% if selected_dept|string == dept.id|string %}selected{% endif %}>
+                    {{ dept.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <label class="form-label small fw-semibold text-muted">Search</label>
+            <div class="input-group input-group-sm">
+                <input type="text" name="search" class="form-control" placeholder="Task title or employee..." value="{{ search }}">
+                <button type="submit" class="btn btn-navy"><i class="bi bi-search"></i></button>
+                {% if selected_status or selected_priority or selected_dept or search %}
+                <a href="{{ url_for('admin.tasks') }}" class="btn btn-outline-secondary" title="Clear Filters">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Tasks Table Card -->
+<div class="card-modern">
+    <div class="table-responsive">
+        <table class="table-modern align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Task Info</th>
+                    <th>Assigned To</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Deadline</th>
+                    <th>Assigned By</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if tasks %}
+                    {% for task in tasks %}
+                    <tr>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ task.title }}</div>
+                            {% if task.description %}
+                            <div class="text-muted small text-truncate" style="max-width: 280px;" title="{{ task.description }}">
+                                {{ task.description }}
+                            </div>
+                            {% else %}
+                            <span class="text-muted small fst-italic">No description</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="fw-semibold">{{ task.first_name }} {{ task.last_name }}</div>
+                            <div class="text-muted small font-monospace">
+                                {{ task.employee_code }} &bull; {{ task.department_name or 'Unassigned' }}
+                            </div>
+                        </td>
+                        <td>
+                            {% if task.priority == 'Urgent' %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                <i class="bi bi-exclamation-octagon-fill me-1"></i> Urgent
+                            </span>
+                            {% elif task.priority == 'High' %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">
+                                <i class="bi bi-arrow-up-circle-fill me-1"></i> High
+                            </span>
+                            {% elif task.priority == 'Medium' %}
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                                <i class="bi bi-dash-circle me-1"></i> Medium
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary border px-2 py-1">
+                                <i class="bi bi-arrow-down-circle me-1"></i> Low
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if task.status == 'Completed' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                <i class="bi bi-check-circle-fill me-1"></i> Completed
+                            </span>
+                            {% elif task.status == 'In Progress' %}
+                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1">
+                                <i class="bi bi-gear-fill me-1"></i> In Progress
+                            </span>
+                            {% else %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">
+                                <i class="bi bi-hourglass-split me-1"></i> Pending
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if task.due_date %}
+                                <div>{{ task.due_date }}</div>
+                                {% if task.status != 'Completed' %}
+                                    {% if task.due_date < today %}
+                                    <span class="badge bg-danger-subtle text-danger" style="font-size: 10px;">Overdue</span>
+                                    {% elif task.due_date == today %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis" style="font-size: 10px;">Due Today</span>
+                                    {% endif %}
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted small">No deadline</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                <i class="bi bi-person me-1"></i> {{ task.assigned_by_name or 'Admin' }}
+                            </small>
+                            <div style="font-size: 11px;" class="text-muted">
+                                {{ task.created_at.strftime('%Y-%m-%d') if task.created_at else '' }}
+                            </div>
+                        </td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editTaskModal{{ task.id }}" title="Edit Task">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteTaskModal{{ task.id }}" title="Delete Task">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Edit Task Modal -->
+                    <div class="modal fade" id="editTaskModal{{ task.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title fw-bold">Edit Task</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('admin.edit_task', task_id=task.id) }}">
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Assign To Employee <span class="text-danger">*</span></label>
+                                            <select name="employee_id" class="form-select" required>
+                                                {% for emp in employees %}
+                                                <option value="{{ emp.id }}" {% if emp.id == task.employee_id %}selected{% endif %}>
+                                                    {{ emp.first_name }} {{ emp.last_name }} ({{ emp.employee_code }}) - {{ emp.department_name or 'General' }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Task Title <span class="text-danger">*</span></label>
+                                            <input type="text" name="title" class="form-control" value="{{ task.title }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Description</label>
+                                            <textarea name="description" class="form-control" rows="3">{{ task.description or '' }}</textarea>
+                                        </div>
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label small fw-semibold">Priority</label>
+                                                <select name="priority" class="form-select">
+                                                    <option value="Low" {% if task.priority == 'Low' %}selected{% endif %}>Low</option>
+                                                    <option value="Medium" {% if task.priority == 'Medium' %}selected{% endif %}>Medium</option>
+                                                    <option value="High" {% if task.priority == 'High' %}selected{% endif %}>High</option>
+                                                    <option value="Urgent" {% if task.priority == 'Urgent' %}selected{% endif %}>Urgent</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small fw-semibold">Status</label>
+                                                <select name="status" class="form-select">
+                                                    <option value="Pending" {% if task.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                                    <option value="In Progress" {% if task.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                                    <option value="Completed" {% if task.status == 'Completed' %}selected{% endif %}>Completed</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Deadline / Due Date</label>
+                                            <input type="date" name="due_date" class="form-control" value="{{ task.due_date or '' }}">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-navy btn-sm">Save Changes</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delete Task Modal -->
+                    <div class="modal fade" id="deleteTaskModal{{ task.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-sm">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title fw-bold text-danger">Delete Task?</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="small mb-0">Are you sure you want to delete task <strong>"{{ task.title }}"</strong>? This action cannot be undone.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                    <form method="POST" action="{{ url_for('admin.delete_task', task_id=task.id) }}">
+                                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                            <div class="fw-semibold">No tasks found</div>
+                            <small>Assign a task using the "Assign New Task" button above.</small>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create Task Modal -->
+<div class="modal fade" id="createTaskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Assign New Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin.create_task') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Assign To Employee <span class="text-danger">*</span></label>
+                        <select name="employee_id" class="form-select" required>
+                            <option value="">Select Employee...</option>
+                            {% for emp in employees %}
+                            <option value="{{ emp.id }}">
+                                {{ emp.first_name }} {{ emp.last_name }} ({{ emp.employee_code }}) - {{ emp.department_name or 'General' }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Task Title <span class="text-danger">*</span></label>
+                        <input type="text" name="title" class="form-control" placeholder="e.g. Prepare quarterly presentation" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Description</label>
+                        <textarea name="description" class="form-control" rows="3" placeholder="Provide detailed instructions for the employee..."></textarea>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Priority</label>
+                            <select name="priority" class="form-select">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                                <option value="Urgent">Urgent</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Deadline / Due Date</label>
+                            <input type="date" name="due_date" class="form-control" value="{{ today }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-navy btn-sm">Assign Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

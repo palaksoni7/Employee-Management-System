@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}Generate Payroll - EMS Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h3 fw-bold mb-1">Generate Monthly Payroll</h2>
+        <p class="text-muted small mb-0">Compute employee compensation, allowances, deductions, and issue official salary slips.</p>
+    </div>
+    <a href="{{ url_for('admin.payroll') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back to Payroll List
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card-modern">
+            <form method="POST" action="{{ url_for('admin.generate_payroll') }}" id="payrollForm">
+                
+                <!-- Section 1: Employee & Period -->
+                <h5 class="fw-bold text-primary mb-3 pb-2 border-bottom">
+                    <i class="bi bi-person-badge me-2"></i> 1. Select Employee & Period
+                </h5>
+                <div class="row g-3 mb-4">
+                    <!-- Employee Selector -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small">Select Employee <span class="text-danger">*</span></label>
+                        <select class="form-select" name="employee_id" id="employeeSelect" required autofocus>
+                            <option value="">Choose Employee...</option>
+                            {% for emp in employees %}
+                            <option value="{{ emp.id }}" data-salary="{{ emp.basic_salary }}">
+                                {{ emp.first_name }} {{ emp.last_name }} ({{ emp.employee_code }}) - {{ emp.department_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Month -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small">Pay Month <span class="text-danger">*</span></label>
+                        <select class="form-select" name="month" required>
+                            {% for m in range(1, 13) %}
+                            <option value="{{ m }}" {% if m == default_month %}selected{% endif %}>
+                                {{ [None, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m] }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Year -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small">Pay Year <span class="text-danger">*</span></label>
+                        <select class="form-select" name="year" required>
+                            {% for y in range(2024, 2030) %}
+                            <option value="{{ y }}" {% if y == default_year %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Section 2: Compensation Breakdown -->
+                <h5 class="fw-bold text-primary mb-3 pb-2 border-bottom">
+                    <i class="bi bi-calculator me-2"></i> 2. Earnings, Allowances & Deductions
+                </h5>
+                <div class="row g-3 mb-4">
+                    <!-- Basic Salary -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Basic Salary (₹) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light">₹</span>
+                            <input type="number" step="0.01" min="1" class="form-control" name="basic_salary" id="basicSalary" 
+                                   placeholder="0.00" required>
+                        </div>
+                        <small class="text-muted" style="font-size: 11px;">Base monthly compensation</small>
+                    </div>
+
+                    <!-- Allowances -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Allowances / Bonus (₹)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-success">+₹</span>
+                            <input type="number" step="0.01" min="0" class="form-control" name="allowances" id="allowances" 
+                                   value="0.00" placeholder="0.00">
+                        </div>
+                        <small class="text-muted" style="font-size: 11px;">HRA, transport, incentive</small>
+                    </div>
+
+                    <!-- Deductions -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Deductions / Taxes (₹)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-danger">-₹</span>
+                            <input type="number" step="0.01" min="0" class="form-control" name="deductions" id="deductions" 
+                                   value="0.00" placeholder="0.00">
+                        </div>
+                        <small class="text-muted" style="font-size: 11px;">Tax, PF, unpaid leave</small>
+                    </div>
+
+                    <!-- Net Salary Live Calculation Box -->
+                    <div class="col-12">
+                        <div class="p-3 rounded border bg-light d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-muted small d-block">Formula: <strong>Net Salary = Basic Salary + Allowances - Deductions</strong></span>
+                                <span class="fw-semibold text-dark">Calculated Take-Home Net Salary:</span>
+                            </div>
+                            <div class="fs-3 fw-bold text-primary font-monospace" id="netSalaryDisplay">
+                                ₹ 0.00
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Disbursement & Payment Details -->
+                <h5 class="fw-bold text-primary mb-3 pb-2 border-bottom">
+                    <i class="bi bi-credit-card me-2"></i> 3. Payment Status & Method
+                </h5>
+                <div class="row g-3 mb-4">
+                    <!-- Status -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Payment Status</label>
+                        <select class="form-select" name="status">
+                            <option value="Pending" selected>Pending</option>
+                            <option value="Paid">Paid</option>
+                        </select>
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Payment Method</label>
+                        <select class="form-select" name="payment_method">
+                            <option value="Bank Transfer" selected>Bank Transfer (NEFT/RTGS)</option>
+                            <option value="Cheque">Cheque</option>
+                            <option value="Cash">Cash</option>
+                        </select>
+                    </div>
+
+                    <!-- Payment Date -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Disbursement / Release Date</label>
+                        <input type="date" class="form-control" name="payment_date">
+                    </div>
+                </div>
+
+                <!-- Submit / Cancel -->
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                    <a href="{{ url_for('admin.payroll') }}" class="btn btn-light border px-4">Cancel</a>
+                    <button type="submit" class="btn btn-navy px-4 fw-semibold">
+                        <i class="bi bi-check2-circle me-1"></i> Calculate & Generate Slip
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const empSelect = document.getElementById('employeeSelect');
+    const basicInput = document.getElementById('basicSalary');
+    const allowancesInput = document.getElementById('allowances');
+    const deductionsInput = document.getElementById('deductions');
+    const netDisplay = document.getElementById('netSalaryDisplay');
+
+    function calculateNet() {
+        const basic = parseFloat(basicInput.value) || 0;
+        const allow = parseFloat(allowancesInput.value) || 0;
+        const deduct = parseFloat(deductionsInput.value) || 0;
+        const net = Math.max(0, basic + allow - deduct);
+        netDisplay.textContent = '₹ ' + net.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    if (empSelect) {
+        empSelect.addEventListener('change', function () {
+            const selectedOpt = empSelect.options[empSelect.selectedIndex];
+            const defaultSalary = selectedOpt.getAttribute('data-salary');
+            if (defaultSalary) {
+                basicInput.value = parseFloat(defaultSalary).toFixed(2);
+                calculateNet();
+            }
+        });
+    }
+
+    [basicInput, allowancesInput, deductionsInput].forEach(function (input) {
+        if (input) {
+            input.addEventListener('input', calculateNet);
+        }
+    });
+
+    calculateNet();
+});
+</script>
+{% endblock %}

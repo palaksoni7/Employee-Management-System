@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Employee - EMS Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h3 fw-bold mb-1">Edit Employee Profile</h2>
+        <p class="text-muted small mb-0">Update employee details, designation, salary, or account status.</p>
+    </div>
+    <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back to Directory
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card-modern">
+            <form method="POST" action="{{ url_for('admin.edit_employee', emp_id=employee.id) }}" enctype="multipart/form-data">
+                
+                <!-- Section 1: Basic & Identification Details -->
+                <h5 class="fw-bold text-primary mb-3 pb-2 border-bottom">
+                    <i class="bi bi-person-lines-fill me-2"></i> 1. Personal & Contact Information
+                </h5>
+                <div class="row g-3 mb-4">
+                    <!-- Employee ID -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Employee ID <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control font-monospace" name="employee_code" value="{{ employee.employee_code }}" required>
+                    </div>
+
+                    <!-- Full Name -->
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold small">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="full_name" 
+                               value="{{ employee.first_name }} {{ employee.last_name }}".strip() required>
+                    </div>
+
+                    <!-- Email Address -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small">Official Email Address <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" name="email" value="{{ employee.email }}" required>
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small">Phone Number</label>
+                        <input type="tel" class="form-control" name="phone" value="{{ employee.phone or '' }}">
+                    </div>
+
+                    <!-- Gender -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small">Gender</label>
+                        <select class="form-select" name="gender">
+                            <option value="Male" {% if employee.gender == 'Male' %}selected{% endif %}>Male</option>
+                            <option value="Female" {% if employee.gender == 'Female' %}selected{% endif %}>Female</option>
+                            <option value="Other" {% if employee.gender == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Section 2: Department & Employment Details -->
+                <h5 class="fw-bold text-primary mb-3 pb-2 border-bottom">
+                    <i class="bi bi-briefcase-fill me-2"></i> 2. Department & Job Details
+                </h5>
+                <div class="row g-3 mb-4">
+                    <!-- Department -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Department</label>
+                        <select class="form-select" name="department_id">
+                            <option value="">Unassigned</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}" {% if employee.department_id == dept.id %}selected{% endif %}>
+                                {{ dept.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Designation -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Designation <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="designation" value="{{ employee.designation }}" required>
+                    </div>
+
+                    <!-- Basic Monthly Salary -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Basic Monthly Salary (₹) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" class="form-control" name="basic_salary" value="{{ employee.basic_salary }}" required>
+                    </div>
+
+                    <!-- Joining Date -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Date of Joining <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" name="date_of_joining" value="{{ employee.date_of_joining }}" required>
+                    </div>
+
+                    <!-- Employment Status -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Employment Status</label>
+                        <select class="form-select" name="is_active">
+                            <option value="1" {% if employee.is_active %}selected{% endif %}>Active (Can Login)</option>
+                            <option value="0" {% if not employee.is_active %}selected{% endif %}>Inactive (Account Locked)</option>
+                        </select>
+                    </div>
+
+                    <!-- Reset Password (Optional) -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Reset Password (Optional)</label>
+                        <input type="text" class="form-control font-monospace" name="password" placeholder="Leave blank to keep current">
+                        <small class="text-muted" style="font-size: 11px;">Only enter if changing password</small>
+                    </div>
+                </div>
+
+                <!-- Section 3: Address & Photo -->
+                <h5 class="fw-bold text-primary mb-3 pb-2 border-bottom">
+                    <i class="bi bi-geo-alt-fill me-2"></i> 3. Address & Profile Photo
+                </h5>
+                <div class="row g-3 mb-4">
+                    <!-- Address -->
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold small">Residential Address</label>
+                        <textarea class="form-control" name="address" rows="3">{{ employee.address or '' }}</textarea>
+                    </div>
+
+                    <!-- Profile Photo -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Change Profile Photo</label>
+                        <input type="file" class="form-control" name="profile_photo" accept=".png, .jpg, .jpeg, .webp">
+                        <small class="text-muted d-block mt-1" style="font-size: 11px;">
+                            Current: <code>{{ employee.profile_photo }}</code>
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                    <a href="{{ url_for('admin.employees') }}" class="btn btn-light border px-4">Cancel</a>
+                    <button type="submit" class="btn btn-navy px-4 fw-semibold">
+                        <i class="bi bi-save me-1"></i> Update Employee
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

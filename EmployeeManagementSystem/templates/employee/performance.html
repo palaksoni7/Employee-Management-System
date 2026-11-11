@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block title %}My Performance - Employee Portal - EMS{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="h3 fw-bold mb-1">My Performance & Feedback</h2>
+        <p class="text-muted small mb-0">Track your performance appraisals, supervisor feedback, and recognized career achievements.</p>
+    </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">Average Rating</div>
+                <div class="stat-value text-primary">
+                    {{ stats.avg_rating }} <span class="fs-6 text-muted">/ 5.0</span>
+                </div>
+            </div>
+            <div class="stat-icon amber">
+                <i class="bi bi-star-fill text-warning"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">Total Reviews</div>
+                <div class="stat-value">{{ stats.total_reviews }}</div>
+            </div>
+            <div class="stat-icon navy">
+                <i class="bi bi-journal-text"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">Latest Review</div>
+                <div class="stat-value text-success">
+                    {% if stats.latest_rating %}
+                    {{ stats.latest_rating }}.0 <span class="fs-6 text-muted">Stars</span>
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </div>
+            </div>
+            <div class="stat-icon emerald">
+                <i class="bi bi-award"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <div class="stat-title">5-Star Honors</div>
+                <div class="stat-value text-warning">{{ stats.five_stars }}</div>
+            </div>
+            <div class="stat-icon blue">
+                <i class="bi bi-trophy"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Review Records & History -->
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card-modern">
+            <h5 class="fw-bold mb-3">Performance Appraisals History</h5>
+
+            {% if reviews %}
+            <div class="vstack gap-3">
+                {% for rev in reviews %}
+                <div class="p-4 rounded border bg-light">
+                    <!-- Period & Rating Row -->
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-navy px-3 py-2 fs-6">{{ rev.review_period }}</span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                                Rating: {{ rev.rating }}.0 / 5.0
+                            </span>
+                        </div>
+                        <div class="text-warning fs-5">
+                            {% for i in range(rev.rating) %}★{% endfor %}{% for i in range(5 - rev.rating) %}☆{% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Feedback Comments -->
+                    <div class="mb-3">
+                        <label class="small text-muted fw-semibold text-uppercase d-block mb-1">Supervisor Feedback:</label>
+                        <p class="mb-0 text-dark" style="font-size: 14.5px; line-height: 1.6;">
+                            "{{ rev.comments }}"
+                        </p>
+                    </div>
+
+                    <!-- Achievements Box -->
+                    {% if rev.achievements %}
+                    <div class="p-3 rounded bg-success-subtle text-success-emphasis border border-success-subtle mb-3">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-trophy-fill text-warning fs-5 mt-1"></i>
+                            <div>
+                                <strong class="d-block mb-1">Recognized Achievements & Milestones:</strong>
+                                <span>{{ rev.achievements }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Footer Info -->
+                    <div class="d-flex justify-content-between align-items-center pt-2 border-top text-muted small">
+                        <span>
+                            <i class="bi bi-person-check me-1"></i> Evaluated by <strong>{{ rev.reviewer_name or 'HR Administration' }}</strong>
+                        </span>
+                        <span>
+                            <i class="bi bi-calendar3 me-1"></i> {{ rev.created_at.strftime('%B %d, %Y') if rev.created_at else '' }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-award fs-1 d-block mb-2 text-secondary"></i>
+                <div class="fw-semibold">No Performance Reviews Yet</div>
+                <small>Your appraisals and evaluations from HR will appear here once conducted.</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right Column: Performance Scale Guide -->
+    <div class="col-lg-4">
+        <div class="card-modern">
+            <h5 class="fw-bold mb-3">Rating Scale Criteria</h5>
+            <p class="text-muted small mb-3">
+                How HR evaluates performance and achievement during review cycles:
+            </p>
+            <div class="vstack gap-2 small">
+                <div class="p-2 rounded bg-light border-start border-4 border-success">
+                    <strong class="text-success">5 Stars &bull; Exceptional</strong>
+                    <div class="text-muted" style="font-size: 12px;">Consistently surpasses goals, solves key challenges, demonstrates leadership.</div>
+                </div>
+                <div class="p-2 rounded bg-light border-start border-4 border-primary">
+                    <strong class="text-primary">4 Stars &bull; Very Good</strong>
+                    <div class="text-muted" style="font-size: 12px;">Frequently exceeds targets and maintains high quality delivery.</div>
+                </div>
+                <div class="p-2 rounded bg-light border-start border-4 border-info">
+                    <strong class="text-info">3 Stars &bull; Satisfactory</strong>
+                    <div class="text-muted" style="font-size: 12px;">Meets standard expectations and completes core responsibilities reliably.</div>
+                </div>
+                <div class="p-2 rounded bg-light border-start border-4 border-warning">
+                    <strong class="text-warning">2 Stars &bull; Needs Improvement</strong>
+                    <div class="text-muted" style="font-size: 12px;">Performance partially meets requirements; coaching needed.</div>
+                </div>
+                <div class="p-2 rounded bg-light border-start border-4 border-danger">
+                    <strong class="text-danger">1 Star &bull; Unsatisfactory</strong>
+                    <div class="text-muted" style="font-size: 12px;">Substantially below required workplace standards.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

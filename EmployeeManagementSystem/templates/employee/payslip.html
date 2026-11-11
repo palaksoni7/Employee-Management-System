@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block title %}Salary Slip - {{ month_name }} {{ slip.year }}{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+    .sidebar, .topbar, .no-print, .btn, footer {
+        display: none !important;
+    }
+    .main-wrapper {
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+    .content-body {
+        padding: 0 !important;
+    }
+    .payslip-container {
+        border: none !important;
+        box-shadow: none !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Top Action Bar -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3 no-print">
+    <div>
+        <h2 class="h3 fw-bold mb-1">My Salary Slip</h2>
+        <p class="text-muted small mb-0">Period: <strong>{{ month_name }} {{ slip.year }}</strong> &bull; Slip ID: <code>EMS-PAY-{{ "%04d"|format(slip.id) }}</code></p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('employee.payroll') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back to Salary History
+        </a>
+        <button type="button" class="btn btn-outline-primary btn-sm" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i> Print Slip
+        </button>
+        <a href="{{ url_for('employee.download_payslip_pdf', payroll_id=slip.id) }}" class="btn btn-navy btn-sm">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+        </a>
+    </div>
+</div>
+
+<!-- Payslip Printable Sheet -->
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card-modern p-5 payslip-container border bg-white shadow-sm">
+            
+            <!-- Document Header -->
+            <div class="d-flex justify-content-between align-items-start border-bottom pb-4 mb-4">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <div class="stat-icon blue" style="width: 36px; height: 36px; font-size: 16px;">
+                            <i class="bi bi-building"></i>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-0">EMPLOYEE MANAGEMENT SYSTEM</h4>
+                    </div>
+                    <span class="text-primary fw-semibold small text-uppercase">Official Salary Statement</span>
+                </div>
+                <div class="text-end small">
+                    <h5 class="fw-bold text-primary mb-1">SALARY SLIP</h5>
+                    <div class="text-muted">Period: <strong>{{ month_name }} {{ slip.year }}</strong></div>
+                    <div class="text-muted font-monospace" style="font-size: 11px;">Slip ID: EMS-PAY-{{ "%04d"|format(slip.id) }}</div>
+                </div>
+            </div>
+
+            <!-- Employee Details Grid -->
+            <div class="p-3 rounded bg-light border mb-4">
+                <div class="row g-2 small">
+                    <div class="col-sm-6 col-md-3 text-muted">Employee ID:</div>
+                    <div class="col-sm-6 col-md-3 fw-bold font-monospace text-primary">{{ slip.employee_code }}</div>
+                    
+                    <div class="col-sm-6 col-md-3 text-muted">Department:</div>
+                    <div class="col-sm-6 col-md-3 fw-semibold text-dark">{{ slip.department_name or 'General' }}</div>
+
+                    <div class="col-sm-6 col-md-3 text-muted">Full Name:</div>
+                    <div class="col-sm-6 col-md-3 fw-bold text-dark">{{ slip.first_name }} {{ slip.last_name }}</div>
+
+                    <div class="col-sm-6 col-md-3 text-muted">Designation:</div>
+                    <div class="col-sm-6 col-md-3 fw-semibold text-dark">{{ slip.designation or 'Staff' }}</div>
+
+                    <div class="col-sm-6 col-md-3 text-muted">Payment Status:</div>
+                    <div class="col-sm-6 col-md-3">
+                        {% if slip.status == 'Paid' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">Paid</span>
+                        {% else %}
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Pending</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-sm-6 col-md-3 text-muted">Payment Method:</div>
+                    <div class="col-sm-6 col-md-3 text-dark">{{ slip.payment_method }}</div>
+                </div>
+            </div>
+
+            <!-- Salary Breakdown Table -->
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50%;">EARNINGS</th>
+                            <th class="text-end" style="width: 50%;">AMOUNT (INR)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Basic Salary</td>
+                            <td class="text-end font-monospace">₹ {{ "{:,.2f}".format(slip.basic_salary) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Allowances & Incentives</td>
+                            <td class="text-end font-monospace text-success">+ ₹ {{ "{:,.2f}".format(slip.allowances) }}</td>
+                        </tr>
+                        <tr class="table-light fw-bold">
+                            <td>Gross Earnings</td>
+                            <td class="text-end font-monospace">₹ {{ "{:,.2f}".format(slip.basic_salary + slip.allowances) }}</td>
+                        </tr>
+                        <thead class="table-light">
+                            <tr>
+                                <th>DEDUCTIONS</th>
+                                <th class="text-end">AMOUNT (INR)</th>
+                            </tr>
+                        </thead>
+                        <tr>
+                            <td>Income Tax / Statutory Deductions</td>
+                            <td class="text-end font-monospace text-danger">- ₹ {{ "{:,.2f}".format(slip.deductions) }}</td>
+                        </tr>
+                        <tr class="table-light fw-bold">
+                            <td>Total Deductions</td>
+                            <td class="text-end font-monospace text-danger">- ₹ {{ "{:,.2f}".format(slip.deductions) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Net Salary Highlight Callout Box -->
+            <div class="p-4 rounded border mb-4" style="background-color: #f0f9ff; border-color: #bae6fd !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-primary fw-bold fs-6">NET TAKE-HOME SALARY</div>
+                        <small class="text-muted">Formula: Basic Salary + Allowances - Deductions</small>
+                    </div>
+                    <div class="fs-2 fw-bold text-primary font-monospace">
+                        ₹ {{ "{:,.2f}".format(slip.net_salary) }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Signatures -->
+            <div class="row pt-4 mt-4 border-top">
+                <div class="col-6 small">
+                    <p class="mb-1 text-muted"><strong>Disbursement Date:</strong> {{ slip.payment_date if slip.payment_date else 'Pending' }}</p>
+                </div>
+                <div class="col-6 text-end">
+                    <div class="fw-semibold text-dark small">Authorized HR Department</div>
+                </div>
+            </div>
+
+            <div class="text-center text-muted pt-4 mt-2 border-top" style="font-size: 11px;">
+                This is a computer-generated salary slip and requires no physical signature.
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

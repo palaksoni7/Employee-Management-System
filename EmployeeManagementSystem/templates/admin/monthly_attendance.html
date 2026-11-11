@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Monthly Attendance - EMS Admin{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="h3 fw-bold mb-1">Monthly Attendance Summary</h2>
+        <p class="text-muted small mb-0">Overview of staff attendance counts and monthly percentages for {{ month_name }} {{ selected_year }}.</p>
+    </div>
+    <a href="{{ url_for('admin.attendance') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back to Daily View
+    </a>
+</div>
+
+<!-- Filters Card -->
+<div class="card-modern mb-4 p-3">
+    <form method="GET" action="{{ url_for('admin.monthly_attendance') }}" class="row g-2 align-items-center">
+        <!-- Month Selector -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <select class="form-select form-select-sm" name="month" onchange="this.form.submit()">
+                {% for m in range(1, 13) %}
+                <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>
+                    {{ [None, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m] }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Year Selector -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <select class="form-select form-select-sm" name="year" onchange="this.form.submit()">
+                {% for y in range(2024, 2030) %}
+                <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Department Filter -->
+        <div class="col-12 col-sm-8 col-md-4">
+            <select class="form-select form-select-sm" name="department" onchange="this.form.submit()">
+                <option value="">All Departments</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}" {% if selected_dept|string == dept.id|string %}selected{% endif %}>
+                    {{ dept.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-12 col-sm-4 col-md-2">
+            <button type="submit" class="btn btn-sm btn-navy w-100">
+                <i class="bi bi-funnel me-1"></i> Update
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Monthly Attendance Table -->
+<div class="card-modern p-0 overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Employee</th>
+                    <th>Department</th>
+                    <th class="text-center">Logged Days</th>
+                    <th class="text-center text-success">Present</th>
+                    <th class="text-center text-warning">Half Day</th>
+                    <th class="text-center text-info">Leave</th>
+                    <th class="text-center text-danger">Absent</th>
+                    <th style="width: 220px;" class="pe-3">Attendance %</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if summary %}
+                    {% for item in summary %}
+                    <tr>
+                        <td class="ps-3">
+                            <div class="fw-bold text-dark">{{ item.name }}</div>
+                            <span class="badge bg-light text-primary border font-monospace" style="font-size: 10px;">
+                                {{ item.employee_code }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ item.department_name }}</span>
+                        </td>
+                        <td class="text-center fw-semibold">{{ item.total_logged }}</td>
+                        <td class="text-center fw-semibold text-success">{{ item.present_count }}</td>
+                        <td class="text-center fw-semibold text-warning">{{ item.half_day_count }}</td>
+                        <td class="text-center fw-semibold text-info">{{ item.leave_count }}</td>
+                        <td class="text-center fw-semibold text-danger">{{ item.absent_count }}</td>
+                        <td class="pe-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 8px;">
+                                    <div class="progress-bar {% if item.percentage >= 80 %}bg-success{% elif item.percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ item.percentage }}%;" 
+                                         aria-valuenow="{{ item.percentage }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <span class="small fw-bold text-dark font-monospace" style="min-width: 45px;">
+                                    {{ item.percentage }}%
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-5">
+                            No active employees found for the selected department.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

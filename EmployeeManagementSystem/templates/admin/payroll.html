@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block title %}Payroll Management - EMS Admin{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="h3 fw-bold mb-1">Salary & Payroll Management</h2>
+        <p class="text-muted small mb-0">Calculate net salaries, process monthly disbursements, and generate official payslips.</p>
+    </div>
+    <a href="{{ url_for('admin.generate_payroll') }}" class="btn btn-navy btn-sm">
+        <i class="bi bi-calculator me-1"></i> Generate New Payroll
+    </a>
+</div>
+
+<!-- Filters Card -->
+<div class="card-modern mb-4 p-3">
+    <form method="GET" action="{{ url_for('admin.payroll') }}" class="row g-2 align-items-center">
+        <!-- Month Selector -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <select class="form-select form-select-sm" name="month" onchange="this.form.submit()">
+                {% for m in range(1, 13) %}
+                <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>
+                    {{ [None, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m] }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Year Selector -->
+        <div class="col-12 col-sm-6 col-md-2">
+            <select class="form-select form-select-sm" name="year" onchange="this.form.submit()">
+                {% for y in range(2024, 2030) %}
+                <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Department Filter -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <select class="form-select form-select-sm" name="department" onchange="this.form.submit()">
+                <option value="">All Departments</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}" {% if selected_dept|string == dept.id|string %}selected{% endif %}>
+                    {{ dept.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Search Input -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <input type="text" class="form-control form-control-sm" name="search" value="{{ search }}" 
+                   placeholder="Search employee name or code...">
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="col-12 col-md-1 d-flex gap-1">
+            <button type="submit" class="btn btn-sm btn-navy w-100">Filter</button>
+            {% if search or selected_dept %}
+            <a href="{{ url_for('admin.payroll', month=selected_month, year=selected_year) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x-lg"></i>
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Payroll Financial Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Processed Slips</div>
+                <div class="stat-value fs-4">{{ stats.total_records }}</div>
+            </div>
+            <div class="stat-icon navy" style="width: 40px; height: 40px; font-size: 18px;">
+                <i class="bi bi-receipt"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Total Net Disbursed</div>
+                <div class="stat-value fs-4 text-primary">₹{{ "{:,.2f}".format(stats.total_net) }}</div>
+            </div>
+            <div class="stat-icon blue" style="width: 40px; height: 40px; font-size: 18px;">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Total Allowances</div>
+                <div class="stat-value fs-4 text-success">₹{{ "{:,.2f}".format(stats.total_allowances) }}</div>
+            </div>
+            <div class="stat-icon emerald" style="width: 40px; height: 40px; font-size: 18px;">
+                <i class="bi bi-plus-circle"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Total Deductions</div>
+                <div class="stat-value fs-4 text-danger">₹{{ "{:,.2f}".format(stats.total_deductions) }}</div>
+            </div>
+            <div class="stat-icon" style="width: 40px; height: 40px; font-size: 18px; background: #fee2e2; color: #dc2626;">
+                <i class="bi bi-dash-circle"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payroll Records Table -->
+<div class="card-modern p-0 overflow-hidden">
+    <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+        <span class="fw-semibold text-dark">
+            <i class="bi bi-calendar3 text-primary me-2"></i> Payroll Records for {{ month_name }} {{ selected_year }}
+        </span>
+        <span class="badge bg-white text-muted border">Entries: {{ payroll_records|length }}</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Employee</th>
+                    <th>Department</th>
+                    <th>Basic Salary</th>
+                    <th>Allowances</th>
+                    <th>Deductions</th>
+                    <th class="fw-bold text-dark">Net Salary</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-end pe-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if payroll_records %}
+                    {% for p in payroll_records %}
+                    <tr>
+                        <td class="ps-3">
+                            <div class="fw-bold text-dark">{{ p.first_name }} {{ p.last_name }}</div>
+                            <span class="badge bg-light text-primary border font-monospace" style="font-size: 10px;">
+                                {{ p.employee_code }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ p.department_name or 'Unassigned' }}</span>
+                        </td>
+                        <td class="small font-monospace">₹{{ "{:,.2f}".format(p.basic_salary) }}</td>
+                        <td class="small font-monospace text-success">+₹{{ "{:,.2f}".format(p.allowances) }}</td>
+                        <td class="small font-monospace text-danger">-₹{{ "{:,.2f}".format(p.deductions) }}</td>
+                        
+                        <!-- Net Salary -->
+                        <td class="small fw-bold text-primary font-monospace">
+                            ₹{{ "{:,.2f}".format(p.net_salary) }}
+                        </td>
+
+                        <!-- Status -->
+                        <td class="text-center">
+                            {% if p.status == 'Paid' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">Paid</span>
+                            {% else %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-1">Pending</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="text-end pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('admin.view_payslip', payroll_id=p.id) }}" 
+                                   class="btn btn-outline-primary" title="View Printable Slip">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('admin.download_payslip_pdf', payroll_id=p.id) }}" 
+                                   class="btn btn-outline-secondary" title="Download PDF Payslip">
+                                    <i class="bi bi-file-earmark-pdf"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('admin.delete_payroll', payroll_id=p.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-outline-danger" 
+                                            onclick="return confirm('Are you sure you want to delete this payroll record?');"
+                                            title="Delete Record">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-5">
+                            <i class="bi bi-receipt display-6 d-block mb-2 text-secondary opacity-50"></i>
+                            No payroll records found for {{ month_name }} {{ selected_year }}.<br/>
+                            Click <strong>Generate New Payroll</strong> to calculate and issue salary slips.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

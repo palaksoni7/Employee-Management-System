@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ employee.first_name }} {{ employee.last_name }} - Employee Profile{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="h3 fw-bold mb-1">Employee Profile</h2>
+        <p class="text-muted small mb-0">Detailed view of employment, department, contact, and HR history.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('admin.employees') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back to Directory
+        </a>
+        <a href="{{ url_for('admin.edit_employee', emp_id=employee.id) }}" class="btn btn-navy btn-sm">
+            <i class="bi bi-pencil me-1"></i> Edit Profile
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Personal Profile Card -->
+    <div class="col-lg-4">
+        <div class="card-modern text-center p-4">
+            <!-- Profile Photo -->
+            <div class="mx-auto mb-3" style="width: 110px; height: 110px; border-radius: 50%; overflow: hidden; border: 3px solid #0284c7; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.2);">
+                {% if employee.profile_photo and employee.profile_photo != 'default_avatar.png' %}
+                    <img src="{{ url_for('static', filename='images/profiles/' + employee.profile_photo) }}" 
+                         alt="{{ employee.first_name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                    <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light text-primary fs-1 fw-bold">
+                        {{ employee.first_name[0]|upper }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Name & Title -->
+            <h4 class="fw-bold mb-1">{{ employee.first_name }} {{ employee.last_name }}</h4>
+            <div class="text-muted small mb-2">{{ employee.designation or 'Staff Member' }}</div>
+
+            <!-- Badges -->
+            <div class="d-flex justify-content-center gap-2 mb-3">
+                <span class="badge bg-light text-primary border border-primary-subtle font-monospace px-2 py-1">
+                    {{ employee.employee_code }}
+                </span>
+                {% if employee.is_active %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Active</span>
+                {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">Inactive</span>
+                {% endif %}
+            </div>
+
+            <!-- Quick Contacts List -->
+            <div class="border-top pt-3 text-start small">
+                <div class="mb-2">
+                    <span class="text-muted d-block" style="font-size: 11px;">Official Email</span>
+                    <span class="fw-semibold text-dark">{{ employee.email }}</span>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted d-block" style="font-size: 11px;">Phone Number</span>
+                    <span class="fw-semibold text-dark">{{ employee.phone or 'Not provided' }}</span>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted d-block" style="font-size: 11px;">Department</span>
+                    <span class="fw-semibold text-dark">{{ employee.department_name or 'Unassigned' }}</span>
+                </div>
+                <div>
+                    <span class="text-muted d-block" style="font-size: 11px;">Residential Address</span>
+                    <span class="text-dark">{{ employee.address or 'No address recorded' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Job Details & HR History -->
+    <div class="col-lg-8">
+        <!-- Job Details Card -->
+        <div class="card-modern mb-4">
+            <h5 class="fw-bold text-primary mb-3 pb-2 border-bottom">
+                <i class="bi bi-briefcase me-2"></i> Employment & Financial Details
+            </h5>
+            <div class="row g-3">
+                <div class="col-sm-6 col-md-4">
+                    <div class="p-3 rounded bg-light border">
+                        <small class="text-muted d-block" style="font-size: 11px;">Date of Joining</small>
+                        <div class="fw-bold text-dark fs-6">{{ employee.date_of_joining }}</div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <div class="p-3 rounded bg-light border">
+                        <small class="text-muted d-block" style="font-size: 11px;">Basic Monthly Salary</small>
+                        <div class="fw-bold text-dark fs-6">₹{{ "{:,.2f}".format(employee.basic_salary) }}</div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <div class="p-3 rounded bg-light border">
+                        <small class="text-muted d-block" style="font-size: 11px;">Gender</small>
+                        <div class="fw-bold text-dark fs-6">{{ employee.gender }}</div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <div class="p-3 rounded bg-light border">
+                        <small class="text-muted d-block" style="font-size: 11px;">System Username</small>
+                        <div class="fw-bold text-dark font-monospace fs-6">{{ employee.username }}</div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <div class="p-3 rounded bg-light border">
+                        <small class="text-muted d-block" style="font-size: 11px;">Profile Registered</small>
+                        <div class="fw-bold text-dark fs-6">{{ employee.created_at.strftime('%d %b %Y') if employee.created_at else 'N/A' }}</div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <div class="p-3 rounded bg-light border">
+                        <small class="text-muted d-block" style="font-size: 11px;">Account Status</small>
+                        <div class="fw-bold fs-6 {% if employee.is_active %}text-success{% else %}text-danger{% endif %}">
+                            <i class="bi bi-circle-fill me-1" style="font-size: 8px;"></i>
+                            {{ 'Active' if employee.is_active else 'Inactive' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Attendance History -->
+        <div class="card-modern mb-4">
+            <h5 class="fw-bold text-primary mb-3 pb-2 border-bottom">
+                <i class="bi bi-calendar-check me-2"></i> Recent Attendance Records
+            </h5>
+            {% if recent_attendance %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="small text-muted">
+                            <th>Date</th>
+                            <th>Clock In</th>
+                            <th>Clock Out</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for att in recent_attendance %}
+                        <tr>
+                            <td class="small fw-semibold">{{ att.date }}</td>
+                            <td class="small">{{ att.clock_in or '--:--' }}</td>
+                            <td class="small">{{ att.clock_out or '--:--' }}</td>
+                            <td>
+                                {% if att.status == 'Present' %}
+                                    <span class="badge bg-success-subtle text-success">Present</span>
+                                {% elif att.status == 'Half Day' %}
+                                    <span class="badge bg-warning-subtle text-warning">Half Day</span>
+                                {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary">{{ att.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-muted small py-2">No attendance records logged for this employee yet.</div>
+            {% endif %}
+        </div>
+
+        <!-- Recent Leave History -->
+        <div class="card-modern">
+            <h5 class="fw-bold text-primary mb-3 pb-2 border-bottom">
+                <i class="bi bi-envelope-paper me-2"></i> Leave History
+            </h5>
+            {% if recent_leaves %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="small text-muted">
+                            <th>Type</th>
+                            <th>Period</th>
+                            <th>Days</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lv in recent_leaves %}
+                        <tr>
+                            <td class="small fw-semibold">{{ lv.leave_type }}</td>
+                            <td class="small">{{ lv.start_date }} to {{ lv.end_date }}</td>
+                            <td class="small">{{ lv.total_days }} day(s)</td>
+                            <td class="small text-muted">{{ lv.reason }}</td>
+                            <td>
+                                {% if lv.status == 'Approved' %}
+                                    <span class="badge bg-success-subtle text-success">Approved</span>
+                                {% elif lv.status == 'Rejected' %}
+                                    <span class="badge bg-danger-subtle text-danger">Rejected</span>
+                                {% else %}
+                                    <span class="badge bg-warning-subtle text-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-muted small py-2">No leave applications found for this employee.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

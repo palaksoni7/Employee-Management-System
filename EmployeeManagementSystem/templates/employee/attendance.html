@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}My Attendance - EMS Employee{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="h3 fw-bold mb-1">My Attendance Record</h2>
+        <p class="text-muted small mb-0">View your daily clock-in/out records, monthly logs, and attendance percentage.</p>
+    </div>
+    
+    <!-- Quick Punch Actions -->
+    <div class="d-flex gap-2">
+        {% if not today_record or not today_record.clock_in %}
+        <form method="POST" action="{{ url_for('employee.clock_in') }}">
+            <button type="submit" class="btn btn-navy btn-sm">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Clock In Now
+            </button>
+        </form>
+        {% elif not today_record.clock_out %}
+        <form method="POST" action="{{ url_for('employee.clock_out') }}">
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-box-arrow-right me-1"></i> Clock Out Now
+            </button>
+        </form>
+        {% else %}
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+            <i class="bi bi-check2-all me-1"></i> Completed Today
+        </span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Month Selector -->
+<div class="card-modern mb-4 p-3">
+    <form method="GET" action="{{ url_for('employee.attendance') }}" class="row g-2 align-items-center">
+        <div class="col-12 col-sm-5 col-md-3">
+            <select class="form-select form-select-sm" name="month" onchange="this.form.submit()">
+                {% for m in range(1, 13) %}
+                <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>
+                    {{ [None, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m] }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-12 col-sm-5 col-md-3">
+            <select class="form-select form-select-sm" name="year" onchange="this.form.submit()">
+                {% for y in range(2024, 2030) %}
+                <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-12 col-sm-2 col-md-2">
+            <button type="submit" class="btn btn-sm btn-navy w-100">View Month</button>
+        </div>
+    </form>
+</div>
+
+<!-- Monthly Attendance Stats Cards -->
+<div class="row g-3 mb-4">
+    <!-- Attendance Percentage -->
+    <div class="col-12 col-md-4">
+        <div class="card-modern h-100 p-3">
+            <div class="stat-title mb-1">Monthly Attendance Rate</div>
+            <div class="d-flex align-items-baseline gap-2 mb-2">
+                <span class="fs-2 fw-bold text-dark font-monospace">{{ stats.percentage }}%</span>
+                <span class="small text-muted">for {{ month_name }} {{ selected_year }}</span>
+            </div>
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar {% if stats.percentage >= 80 %}bg-success{% elif stats.percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                     role="progressbar" 
+                     style="width: {{ stats.percentage }}%;" 
+                     aria-valuenow="{{ stats.percentage }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Counters -->
+    <div class="col-6 col-md-2">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Present Days</div>
+                <div class="stat-value fs-4 text-success">{{ stats.present }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-2">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Half Days</div>
+                <div class="stat-value fs-4 text-warning">{{ stats.half_day }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-2">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Approved Leave</div>
+                <div class="stat-value fs-4 text-info">{{ stats.leave }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-2">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Absent Days</div>
+                <div class="stat-value fs-4 text-danger">{{ stats.absent }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Records Table -->
+<div class="card-modern p-0 overflow-hidden">
+    <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+        <span class="fw-semibold text-dark">
+            <i class="bi bi-clock-history text-primary me-2"></i> Attendance Log History ({{ month_name }} {{ selected_year }})
+        </span>
+        <span class="badge bg-white text-muted border">Entries: {{ attendance_records|length }}</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Date</th>
+                    <th>Clock In</th>
+                    <th>Clock Out</th>
+                    <th class="text-center">Status</th>
+                    <th class="pe-3">Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if attendance_records %}
+                    {% for rec in attendance_records %}
+                    <tr>
+                        <td class="ps-3 fw-semibold text-dark">{{ rec.date }}</td>
+                        <td class="small font-monospace text-muted">{{ rec.clock_in if rec.clock_in else '--:--' }}</td>
+                        <td class="small font-monospace text-muted">{{ rec.clock_out if rec.clock_out else '--:--' }}</td>
+                        <td class="text-center">
+                            {% if rec.status == 'Present' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">Present</span>
+                            {% elif rec.status == 'Absent' %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1">Absent</span>
+                            {% elif rec.status == 'Half Day' %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-1">Half Day</span>
+                            {% elif rec.status in ['Leave', 'On Leave'] %}
+                                <span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-1">Leave</span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary px-3 py-1">{{ rec.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-3 small text-muted">{{ rec.notes if rec.notes else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-5">
+                            <i class="bi bi-calendar-x display-6 d-block mb-2 text-secondary opacity-50"></i>
+                            No attendance records found for {{ month_name }} {{ selected_year }}.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

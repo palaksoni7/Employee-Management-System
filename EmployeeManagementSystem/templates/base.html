@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EMS - Employee Management System{% endblock %}</title>
+    
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- Custom Theme Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% if session.get('user_id') %}
+<div class="app-container">
+    <!-- Left Sidebar Navigation -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-logo"><i class="bi bi-people-fill"></i></div>
+            <div class="brand-text">EMS Portal</div>
+        </div>
+        
+        <ul class="sidebar-menu">
+            {% if session.get('role') == 'admin' %}
+            <li class="menu-category">Main</li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('admin.dashboard') }}" class="sidebar-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Admin Dashboard</span>
+                </a>
+            </li>
+            
+            <li class="menu-category">Organization</li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('admin.departments') }}" class="sidebar-link {% if request.endpoint == 'admin.departments' %}active{% endif %}">
+                    <i class="bi bi-building"></i>
+                    <span>Departments</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('admin.employees') }}" class="sidebar-link {% if request.endpoint in ['admin.employees', 'admin.add_employee', 'admin.edit_employee', 'admin.view_employee'] %}active{% endif %}">
+                    <i class="bi bi-person-lines-fill"></i>
+                    <span>Employees</span>
+                </a>
+            </li>
+            
+            <li class="menu-category">HR Operations</li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('admin.attendance') }}" class="sidebar-link {% if 'attendance' in request.endpoint and 'admin' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>Attendance</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('admin.leaves') }}" class="sidebar-link {% if 'leaves' in request.endpoint and 'admin' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-envelope-paper"></i>
+                    <span>Leave Requests</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('admin.payroll') }}" class="sidebar-link {% if 'payroll' in request.endpoint and 'admin' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-cash-stack"></i>
+                    <span>Payroll</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('admin.tasks') }}" class="sidebar-link {% if 'tasks' in request.endpoint and 'admin' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-check2-square"></i>
+                    <span>Tasks</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('admin.performance') }}" class="sidebar-link {% if 'performance' in request.endpoint and 'admin' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-star"></i>
+                    <span>Performance</span>
+                </a>
+            </li>
+            {% else %}
+            <!-- Employee Navigation -->
+            <li class="menu-category">Self Service</li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('employee.dashboard') }}" class="sidebar-link {% if request.endpoint == 'employee.dashboard' %}active{% endif %}">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>My Dashboard</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('employee.profile') }}" class="sidebar-link {% if request.endpoint == 'employee.profile' %}active{% endif %}">
+                    <i class="bi bi-person-circle"></i>
+                    <span>My Profile</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('employee.attendance') }}" class="sidebar-link {% if request.endpoint == 'employee.attendance' %}active{% endif %}">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>My Attendance</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('employee.leaves') }}" class="sidebar-link {% if request.endpoint == 'employee.leaves' %}active{% endif %}">
+                    <i class="bi bi-envelope-paper"></i>
+                    <span>Leave Applications</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('employee.payroll') }}" class="sidebar-link {% if 'payroll' in request.endpoint and 'employee' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-receipt"></i>
+                    <span>Salary Slips</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('employee.tasks') }}" class="sidebar-link {% if 'tasks' in request.endpoint and 'employee' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-list-task"></i>
+                    <span>Assigned Tasks</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('employee.performance') }}" class="sidebar-link {% if 'performance' in request.endpoint and 'employee' in request.endpoint %}active{% endif %}">
+                    <i class="bi bi-star"></i>
+                    <span>My Performance</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+        <!-- Top Navbar -->
+        <header class="topbar">
+            <button class="topbar-toggle" id="sidebarToggle">
+                <i class="bi bi-list"></i>
+            </button>
+            
+            <div class="d-none d-md-flex align-items-center text-muted">
+                <i class="bi bi-shield-check me-2 text-primary"></i>
+                <small class="fw-semibold">Employee Management System &bull; College Project Demo</small>
+            </div>
+            
+            <div class="topbar-user">
+                <span class="user-badge">{{ session.get('role', 'user') }}</span>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="user-avatar">
+                        {{ session.get('username', 'U')[0]|upper }}
+                    </div>
+                    <div class="d-none d-sm-block text-start">
+                        <div class="fw-semibold small">{{ session.get('full_name', session.get('username')) }}</div>
+                        <div class="text-muted" style="font-size: 11px;">{{ session.get('email') }}</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-danger ms-2" title="Logout">
+                    <i class="bi bi-box-arrow-right"></i>
+                </a>
+            </div>
+        </header>
+
+        <!-- Body Content -->
+        <main class="content-body">
+            <!-- Flash Notifications -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+{% else %}
+    <!-- Public / Authentication Layout -->
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="container pt-4">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block auth_content %}{% endblock %}
+    </main>
+{% endif %}
+
+<!-- Bootstrap 5 Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Chart.js CDN for Interactive Visualizations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

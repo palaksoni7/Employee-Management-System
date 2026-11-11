@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block title %}Leave Applications - EMS Admin{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="h3 fw-bold mb-1">Leave Management</h2>
+        <p class="text-muted small mb-0">Review employee leave applications, approve or reject with remarks, and synchronize attendance.</p>
+    </div>
+</div>
+
+<!-- Leave Status Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('admin.leaves', status='All') }}" class="text-decoration-none">
+            <div class="stat-card p-3 {% if selected_status == 'All' %}border-primary{% endif %}">
+                <div>
+                    <div class="stat-title" style="font-size: 11px;">Total Requests</div>
+                    <div class="stat-value fs-4 text-dark">{{ stats.total }}</div>
+                </div>
+                <div class="stat-icon navy" style="width: 42px; height: 42px; font-size: 18px;">
+                    <i class="bi bi-folder2"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('admin.leaves', status='Pending') }}" class="text-decoration-none">
+            <div class="stat-card p-3 {% if selected_status == 'Pending' %}border-warning{% endif %}">
+                <div>
+                    <div class="stat-title" style="font-size: 11px;">Pending Review</div>
+                    <div class="stat-value fs-4 text-warning">{{ stats.pending }}</div>
+                </div>
+                <div class="stat-icon amber" style="width: 42px; height: 42px; font-size: 18px;">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('admin.leaves', status='Approved') }}" class="text-decoration-none">
+            <div class="stat-card p-3 {% if selected_status == 'Approved' %}border-success{% endif %}">
+                <div>
+                    <div class="stat-title" style="font-size: 11px;">Approved</div>
+                    <div class="stat-value fs-4 text-success">{{ stats.approved }}</div>
+                </div>
+                <div class="stat-icon emerald" style="width: 42px; height: 42px; font-size: 18px;">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('admin.leaves', status='Rejected') }}" class="text-decoration-none">
+            <div class="stat-card p-3 {% if selected_status == 'Rejected' %}border-danger{% endif %}">
+                <div>
+                    <div class="stat-title" style="font-size: 11px;">Rejected</div>
+                    <div class="stat-value fs-4 text-danger">{{ stats.rejected }}</div>
+                </div>
+                <div class="stat-icon" style="width: 42px; height: 42px; font-size: 18px; background: #fee2e2; color: #dc2626;">
+                    <i class="bi bi-x-circle"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Search & Filters -->
+<div class="card-modern mb-4 p-3">
+    <form method="GET" action="{{ url_for('admin.leaves') }}" class="row g-2 align-items-center">
+        <!-- Status Filter Tabs / Dropdown -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <select class="form-select form-select-sm" name="status" onchange="this.form.submit()">
+                <option value="All" {% if selected_status == 'All' %}selected{% endif %}>All Statuses</option>
+                <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending Only</option>
+                <option value="Approved" {% if selected_status == 'Approved' %}selected{% endif %}>Approved Only</option>
+                <option value="Rejected" {% if selected_status == 'Rejected' %}selected{% endif %}>Rejected Only</option>
+            </select>
+        </div>
+
+        <!-- Department Filter -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <select class="form-select form-select-sm" name="department" onchange="this.form.submit()">
+                <option value="">All Departments</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}" {% if selected_dept|string == dept.id|string %}selected{% endif %}>
+                    {{ dept.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Search Input -->
+        <div class="col-12 col-sm-8 col-md-4">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" name="search" value="{{ search }}" 
+                       placeholder="Search employee name or code...">
+            </div>
+        </div>
+
+        <!-- Filter Submit Button -->
+        <div class="col-12 col-sm-4 col-md-2 d-flex gap-1">
+            <button type="submit" class="btn btn-sm btn-navy w-100">Filter</button>
+            {% if search or selected_dept or selected_status != 'All' %}
+            <a href="{{ url_for('admin.leaves') }}" class="btn btn-sm btn-outline-secondary" title="Reset Filters">
+                <i class="bi bi-x-lg"></i>
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Leave Requests Table -->
+<div class="card-modern p-0 overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Employee</th>
+                    <th>Leave Type</th>
+                    <th>Dates & Duration</th>
+                    <th style="max-width: 260px;">Reason</th>
+                    <th>Applied On</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-end pe-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if leaves %}
+                    {% for lv in leaves %}
+                    <tr>
+                        <td class="ps-3">
+                            <div class="fw-bold text-dark">{{ lv.first_name }} {{ lv.last_name }}</div>
+                            <span class="badge bg-light text-primary border font-monospace" style="font-size: 10px;">
+                                {{ lv.employee_code }}
+                            </span>
+                            <small class="text-muted d-block" style="font-size: 11px;">{{ lv.department_name or 'Unassigned' }}</small>
+                        </td>
+
+                        <!-- Leave Type -->
+                        <td>
+                            <span class="badge bg-light text-dark border fw-medium px-2 py-1">
+                                {{ lv.leave_type }}
+                            </span>
+                        </td>
+
+                        <!-- Dates -->
+                        <td>
+                            <div class="small fw-semibold text-dark">{{ lv.start_date }} to {{ lv.end_date }}</div>
+                            <span class="badge bg-secondary-subtle text-secondary" style="font-size: 10px;">
+                                {{ lv.total_days }} day(s)
+                            </span>
+                        </td>
+
+                        <!-- Reason -->
+                        <td class="small text-muted" style="max-width: 260px;">
+                            <div class="text-truncate" title="{{ lv.reason }}">{{ lv.reason }}</div>
+                            {% if lv.admin_remarks %}
+                            <div class="mt-1 text-danger small">
+                                <i class="bi bi-chat-left-dots me-1"></i> Remarks: {{ lv.admin_remarks }}
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Applied Date -->
+                        <td class="small text-muted">
+                            {{ lv.applied_at.strftime('%d %b %Y, %H:%M') if lv.applied_at else 'N/A' }}
+                        </td>
+
+                        <!-- Status Badge -->
+                        <td class="text-center">
+                            {% if lv.status == 'Approved' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">Approved</span>
+                            {% elif lv.status == 'Rejected' %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1">Rejected</span>
+                            {% else %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-1">Pending</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Action Buttons -->
+                        <td class="text-end pe-3">
+                            {% if lv.status == 'Pending' %}
+                            <div class="btn-group btn-group-sm">
+                                <!-- Approve Form -->
+                                <form method="POST" action="{{ url_for('admin.approve_leave', leave_id=lv.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-outline-success" 
+                                            onclick="return confirm('Approve this leave request? It will automatically reflect in attendance.');"
+                                            title="Approve Leave">
+                                        <i class="bi bi-check-lg"></i> Approve
+                                    </button>
+                                </form>
+
+                                <!-- Reject Button Triggering Modal -->
+                                <button type="button" class="btn btn-outline-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#rejectModal{{ lv.id }}" 
+                                        title="Reject Leave">
+                                    <i class="bi bi-x-lg"></i> Reject
+                                </button>
+                            </div>
+
+                            <!-- Reject Modal -->
+                            <div class="modal fade" id="rejectModal{{ lv.id }}" tabindex="-1" aria-hidden="true" style="text-align: left;">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <form method="POST" action="{{ url_for('admin.reject_leave', leave_id=lv.id) }}">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title fw-bold text-danger">Reject Leave Application</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p class="mb-2">
+                                                    Rejecting leave for <strong>{{ lv.first_name }} {{ lv.last_name }}</strong> 
+                                                    ({{ lv.leave_type }}, {{ lv.total_days }} day(s)).
+                                                </p>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold small">Rejection Reason / Remarks <span class="text-danger">*</span></label>
+                                                    <textarea class="form-control" name="admin_remarks" rows="3" 
+                                                              placeholder="e.g. Inadequate team coverage, project deadline..." required></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-sm btn-danger">Confirm Rejection</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <span class="text-muted small">Reviewed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-5">
+                            <i class="bi bi-inbox display-6 d-block mb-2 text-secondary opacity-50"></i>
+                            No leave requests found matching the current filters.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

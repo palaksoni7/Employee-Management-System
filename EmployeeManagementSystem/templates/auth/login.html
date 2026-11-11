@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block title %}EMS - Portal Login{% endblock %}
+
+{% block auth_content %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <!-- Brand Header -->
+        <div class="auth-header">
+            <div class="brand-icon">
+                <i class="bi bi-building-lock"></i>
+            </div>
+            <h3>EMS Portal</h3>
+            <p>Employee Management System</p>
+        </div>
+
+        <!-- Role Selection Tabs (Admin vs Employee) -->
+        <ul class="nav nav-pills nav-fill mb-4 p-1 bg-light rounded-3" id="loginTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-2 fw-semibold {% if active_tab != 'employee' %}active{% endif %}" 
+                        id="admin-tab" data-bs-toggle="pill" data-bs-target="#admin-pane" type="button" role="tab">
+                    <i class="bi bi-shield-lock me-1"></i> Admin Login
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-2 fw-semibold {% if active_tab == 'employee' %}active{% endif %}" 
+                        id="employee-tab" data-bs-toggle="pill" data-bs-target="#employee-pane" type="button" role="tab">
+                    <i class="bi bi-person-badge me-1"></i> Employee Login
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="loginTabContent">
+            <!-- ============================================== -->
+            <!-- 1. ADMIN LOGIN TAB -->
+            <!-- ============================================== -->
+            <div class="tab-pane fade {% if active_tab != 'employee' %}show active{% endif %}" id="admin-pane" role="tabpanel">
+                <div class="text-muted small mb-3 text-center">
+                    Sign in to manage HR modules, departments, and payroll.
+                </div>
+
+                <form method="POST" action="{{ url_for('auth.admin_login') }}">
+                    <div class="mb-3">
+                        <label for="admin_username" class="form-label fw-semibold small text-muted">Admin Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-primary"><i class="bi bi-person-fill"></i></span>
+                            <input type="text" class="form-control" id="admin_username" name="username" 
+                                   placeholder="e.g. admin" required autofocus>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="admin_password" class="form-label fw-semibold small text-muted">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-primary"><i class="bi bi-key-fill"></i></span>
+                            <input type="password" class="form-control" id="admin_password" name="password" 
+                                   placeholder="Enter admin password" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-navy w-100 py-2 fw-semibold">
+                        Sign In as Admin <i class="bi bi-arrow-right-short fs-5 align-middle"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- ============================================== -->
+            <!-- 2. EMPLOYEE LOGIN TAB -->
+            <!-- ============================================== -->
+            <div class="tab-pane fade {% if active_tab == 'employee' %}show active{% endif %}" id="employee-pane" role="tabpanel">
+                <div class="text-muted small mb-3 text-center">
+                    Sign in to view attendance, leaves, salary slips, and tasks.
+                </div>
+
+                <form method="POST" action="{{ url_for('auth.employee_login') }}">
+                    <div class="mb-3">
+                        <label for="employee_login_id" class="form-label fw-semibold small text-muted">Employee ID or Email</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-primary"><i class="bi bi-person-vcard-fill"></i></span>
+                            <input type="text" class="form-control" id="employee_login_id" name="login_id" 
+                                   placeholder="e.g. EMS101 or john.doe@ems.com" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="employee_password" class="form-label fw-semibold small text-muted">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-primary"><i class="bi bi-lock-fill"></i></span>
+                            <input type="password" class="form-control" id="employee_password" name="password" 
+                                   placeholder="Enter your password" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-blue w-100 py-2 fw-semibold">
+                        Sign In as Employee <i class="bi bi-arrow-right-short fs-5 align-middle"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- College Project Demo Credentials Box -->
+        <div class="mt-4 pt-3 border-top">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <small class="fw-semibold text-muted text-uppercase" style="font-size: 11px;">Demo Test Credentials</small>
+                <span class="badge bg-secondary-subtle text-secondary" style="font-size: 10px;">For Viva / Demo</span>
+            </div>
+            
+            <div class="p-2 bg-light rounded border small font-monospace">
+                <div class="d-flex justify-content-between mb-1 pb-1 border-bottom">
+                    <span class="text-primary fw-bold">Admin Login:</span>
+                    <span>admin / Admin@123</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1 pb-1 border-bottom">
+                    <span class="text-info-emphasis fw-bold">EMS102 (HR):</span>
+                    <span>EMS102 / Password@123</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1 pb-1 border-bottom">
+                    <span class="text-info-emphasis fw-bold">EMS103 (IT):</span>
+                    <span>EMS103 / Password@123</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-info-emphasis fw-bold">EMS104 (Finance):</span>
+                    <span>EMS104 / Password@123</span>
+                </div>
+            </div>
+            <div class="text-center mt-2">
+                <small class="text-muted" style="font-size: 11px;">
+                    <i class="bi bi-info-circle me-1"></i> Employees can log in using Employee ID or Email.
+                </small>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

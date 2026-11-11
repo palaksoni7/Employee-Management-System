@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block title %}Department Management - EMS Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="h3 fw-bold mb-1">Department Management</h2>
+        <p class="text-muted small mb-0">Organize and structure company departments and headcounts.</p>
+    </div>
+    <button type="button" class="btn btn-navy btn-sm" data-bs-toggle="modal" data-bs-target="#addDepartmentModal">
+        <i class="bi bi-plus-circle me-1"></i> Add New Department
+    </button>
+</div>
+
+<!-- Departments Table Card -->
+<div class="card-modern">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 60px;">#</th>
+                    <th>Department Name</th>
+                    <th>Description</th>
+                    <th class="text-center">Staff Count</th>
+                    <th>Created At</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if departments %}
+                    {% for dept in departments %}
+                    <tr>
+                        <td class="text-muted fw-semibold">{{ loop.index }}</td>
+                        <td>
+                            <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                                <span class="stat-icon blue" style="width: 32px; height: 32px; font-size: 14px;">
+                                    <i class="bi bi-building"></i>
+                                </span>
+                                {{ dept.name }}
+                            </div>
+                        </td>
+                        <td class="text-muted small" style="max-width: 300px;">
+                            {{ dept.description if dept.description else 'No description provided.' }}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fs-6">
+                                {{ dept.employee_count }}
+                            </span>
+                        </td>
+                        <td class="text-muted small">{{ dept.created_at.strftime('%d %b %Y') if dept.created_at else 'N/A' }}</td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <!-- Edit Button -->
+                                <button type="button" class="btn btn-outline-secondary" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editModal{{ dept.id }}" 
+                                        title="Edit Department">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                
+                                <!-- Delete Button -->
+                                <button type="button" class="btn btn-outline-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteModal{{ dept.id }}" 
+                                        title="Delete Department">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+
+                            <!-- Edit Modal for this Department -->
+                            <div class="modal fade" id="editModal{{ dept.id }}" tabindex="-1" aria-hidden="true" style="text-align: left;">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <form method="POST" action="{{ url_for('admin.edit_department', dept_id=dept.id) }}">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title fw-bold">Edit Department</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold small">Department Name <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control" name="name" value="{{ dept.name }}" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold small">Description</label>
+                                                    <textarea class="form-control" name="description" rows="3">{{ dept.description }}</textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-sm btn-navy">Save Changes</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Delete Confirmation Modal -->
+                            <div class="modal fade" id="deleteModal{{ dept.id }}" tabindex="-1" aria-hidden="true" style="text-align: left;">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <form method="POST" action="{{ url_for('admin.delete_department', dept_id=dept.id) }}">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title fw-bold text-danger">Confirm Deletion</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p class="mb-1">Are you sure you want to delete the <strong>{{ dept.name }}</strong> department?</p>
+                                                <small class="text-muted d-block mt-2">
+                                                    <i class="bi bi-info-circle me-1"></i>
+                                                    Note: Departments with assigned employees cannot be deleted until employees are reassigned.
+                                                </small>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-sm btn-danger">Yes, Delete</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-5">
+                            <i class="bi bi-building display-6 d-block mb-2 text-secondary opacity-50"></i>
+                            No departments found. Click <strong>Add New Department</strong> to create one.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Add New Department -->
+<div class="modal fade" id="addDepartmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin.add_department') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Add New Department</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Department Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="name" placeholder="e.g. Quality Assurance" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Description</label>
+                        <textarea class="form-control" name="description" rows="3" placeholder="Brief summary of department responsibilities..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-navy">Create Department</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

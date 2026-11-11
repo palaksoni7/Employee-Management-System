@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}My Salary Slips - EMS Employee{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="h3 fw-bold mb-1">My Salary & Compensation</h2>
+        <p class="text-muted small mb-0">View monthly salary history, breakdowns, and download official PDF payslips.</p>
+    </div>
+    <a href="{{ url_for('employee.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Return to Dashboard
+    </a>
+</div>
+
+<!-- Personal Financial Summary Cards -->
+<div class="row g-3 mb-4">
+    <!-- Current Basic Salary -->
+    <div class="col-12 col-sm-4">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Current Base Salary</div>
+                <div class="stat-value fs-4 text-dark font-monospace">₹{{ "{:,.2f}".format(stats.basic_salary) }}</div>
+            </div>
+            <div class="stat-icon navy" style="width: 42px; height: 42px; font-size: 18px;">
+                <i class="bi bi-wallet2"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Latest Net Take-Home -->
+    <div class="col-12 col-sm-4">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Latest Month Net Pay</div>
+                <div class="stat-value fs-4 text-primary font-monospace">₹{{ "{:,.2f}".format(stats.latest_net) }}</div>
+            </div>
+            <div class="stat-icon blue" style="width: 42px; height: 42px; font-size: 18px;">
+                <i class="bi bi-cash-coin"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Payslips Available -->
+    <div class="col-12 col-sm-4">
+        <div class="stat-card p-3">
+            <div>
+                <div class="stat-title" style="font-size: 11px;">Available Payslips</div>
+                <div class="stat-value fs-4 text-success">{{ stats.total_slips }}</div>
+            </div>
+            <div class="stat-icon emerald" style="width: 42px; height: 42px; font-size: 18px;">
+                <i class="bi bi-receipt"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Salary History Table -->
+<div class="card-modern p-0 overflow-hidden">
+    <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+        <span class="fw-semibold text-dark">
+            <i class="bi bi-clock-history text-primary me-2"></i> Monthly Salary History
+        </span>
+        <span class="badge bg-white text-muted border">Total Slips: {{ payslips|length }}</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Pay Period</th>
+                    <th>Basic Salary</th>
+                    <th>Allowances</th>
+                    <th>Deductions</th>
+                    <th>Net Salary</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-end pe-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if payslips %}
+                    {% for slip in payslips %}
+                    <tr>
+                        <td class="ps-3">
+                            <div class="fw-bold text-dark">
+                                {{ [None, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][slip.month] }} {{ slip.year }}
+                            </div>
+                            <small class="text-muted font-monospace" style="font-size: 10px;">
+                                EMS-PAY-{{ "%04d"|format(slip.id) }}
+                            </small>
+                        </td>
+
+                        <td class="small font-monospace">₹{{ "{:,.2f}".format(slip.basic_salary) }}</td>
+                        <td class="small font-monospace text-success">+₹{{ "{:,.2f}".format(slip.allowances) }}</td>
+                        <td class="small font-monospace text-danger">-₹{{ "{:,.2f}".format(slip.deductions) }}</td>
+                        
+                        <!-- Net Salary -->
+                        <td class="small fw-bold text-primary font-monospace">
+                            ₹{{ "{:,.2f}".format(slip.net_salary) }}
+                        </td>
+
+                        <!-- Status Badge -->
+                        <td class="text-center">
+                            {% if slip.status == 'Paid' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">Paid</span>
+                            {% else %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-1">Pending</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Action Buttons -->
+                        <td class="text-end pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('employee.view_payslip', payroll_id=slip.id) }}" 
+                                   class="btn btn-outline-primary" title="View Payslip">
+                                    <i class="bi bi-eye"></i> View Slip
+                                </a>
+                                <a href="{{ url_for('employee.download_payslip_pdf', payroll_id=slip.id) }}" 
+                                   class="btn btn-navy" title="Download PDF Payslip">
+                                    <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-5">
+                            <i class="bi bi-receipt display-6 d-block mb-2 text-secondary opacity-50"></i>
+                            No salary slips have been generated for your account yet.<br/>
+                            Once processed by HR, your payslips and PDF downloads will appear here.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
