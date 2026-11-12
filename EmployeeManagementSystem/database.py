@@ -85,18 +85,21 @@ def init_db():
     """
     print("[Database] Starting database initialization...")
     try:
-        # Step 1: Connect to MySQL server without database
-        conn = get_db_connection(use_database=False)
-        cursor = conn.cursor()
-        
-        # Step 2: Create database if not exists
-        cursor.execute(
-            f"CREATE DATABASE IF NOT EXISTS `{Config.DB_NAME}` "
-            f"CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-        )
-        cursor.close()
-        conn.close()
-        print(f"[Database] Database '{Config.DB_NAME}' checked/created.")
+        # Step 1 & 2: Create database if not exists (works for local development)
+        try:
+            conn = get_db_connection(use_database=False)
+            cursor = conn.cursor()
+            cursor.execute(
+                f"CREATE DATABASE IF NOT EXISTS `{Config.DB_NAME}` "
+                f"CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+            )
+            cursor.close()
+            conn.close()
+            print(f"[Database] Database '{Config.DB_NAME}' checked/created.")
+        except Exception as e:
+            # On cloud databases (like Railway), the database is pre-created and the user
+            # may not have permission to run server-level CREATE DATABASE. Proceed directly.
+            print(f"[Database Note] Server-level database check skipped ({e}). Connecting to target database directly.")
 
         # Step 3: Connect to the specific database
         conn = get_db_connection(use_database=True)

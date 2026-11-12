@@ -12,6 +12,12 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # Automatically initialize tables and default seed data on startup
+    try:
+        init_db()
+    except Exception as e:
+        print(f"[Startup Database Note] Automatic DB initialization skipped or deferred: {e}")
+
     # Register Blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(admin_bp, url_prefix='/admin')

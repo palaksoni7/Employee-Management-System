@@ -1,6 +1,6 @@
 """
 Employee Management System (EMS) - Application Entry Point
-Run this file to start the development server on http://127.0.0.1:5000
+Can be run directly with Python or served via Gunicorn (WSGI).
 """
 
 import sys
@@ -8,14 +8,14 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Locate and load the .env file
+# Locate and load the .env file if available
 base_dir = os.path.dirname(os.path.abspath(__file__))
 env_path = Path(base_dir) / 'EmployeeManagementSystem' / '.env'
 if not env_path.exists():
     env_path = Path(base_dir) / '.env'
 
 if env_path.exists():
-    load_dotenv(env_path, override=True)
+    load_dotenv(env_path, override=False)
 
 # Add the application directory to Python path
 ems_dir = os.path.join(base_dir, 'EmployeeManagementSystem')
@@ -32,8 +32,12 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"[Warning] Auto database initialization skipped: {e}")
 
+    # Port assignment from environment (Railway / Cloud standard) or fallback to 5000
+    port = int(os.environ.get('PORT', 5000))
+    debug_mode = os.environ.get('FLASK_DEBUG', '0') == '1'
+
     print("==================================================")
     print(" Starting Employee Management System")
-    print(" Access the application at: http://127.0.0.1:5000")
+    print(f" Access the application at: http://127.0.0.1:{port}")
     print("==================================================")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)
