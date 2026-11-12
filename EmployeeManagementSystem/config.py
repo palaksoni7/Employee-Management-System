@@ -66,11 +66,12 @@ class Config:
 
     # User
     _env_db_user = os.environ.get('DB_USER')
-    if os.environ.get('MYSQLUSER'):
-        DB_USER = os.environ.get('MYSQLUSER')
+    _env_mysql_user = os.environ.get('MYSQLUSER')
+    if _env_mysql_user and _env_mysql_user != 'MYSQLUSER':
+        DB_USER = _env_mysql_user
     elif _url_user:
         DB_USER = _url_user
-    elif _env_db_user:
+    elif _env_db_user and _env_db_user != 'MYSQLUSER':
         DB_USER = _env_db_user
     else:
         DB_USER = 'root'
